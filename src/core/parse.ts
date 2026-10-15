@@ -1,11 +1,15 @@
-import { emptyService, emptyWeek, norm } from './engine';
+import { emptyService, fieldsFor, norm } from './engine';
+import { occasionOf } from './doc';
 import { COL_LABELS, COLS } from './types';
-import type { CellEdit, Col, RoleChange, ServiceInput, WeekInput } from './types';
+import type { Col, Kind, RoleChange, RulesFile, ServiceInput, V1Edit, WeekInput } from './types';
 
 /** Korean keys accepted in the text format. */
 export const PEOPLE_KEYS = ['사회', '설교', '인도', '나래이션', 'PD', 'FD', '음향', '조명', '자막', '방송실', '카메라'];
 const PEOPLE_ALIASES: Record<string, string> = { 사회자: '사회', 설교자: '설교', 인도자: '인도', 봉독: '나래이션', 봉독자: '나래이션', 나레이션: '나래이션' };
-export const LIST_KEYS = ['찬양', '찬양1', '찬양2', '본문', '설교제목', '봉헌찬양', '축도찬양', '마무리찬양', '성가대찬양', '선교지', '과정', '영상목록'];
+export const LIST_KEYS = [
+  '찬양', '찬양1', '찬양2', '본문', '설교제목', '봉헌찬양', '축도찬양', '마무리찬양', '설교후찬양', '성가대찬양', '특순곡', '교역자특순곡',
+  '축복송', '선교지', '과정', '영상목록',
+];
 const LIST_ALIASES: Record<string, string> = { 성경본문: '본문', 성경구절: '본문', 제목: '설교제목', 봉헌곡: '봉헌찬양', 비전찬양: '봉헌찬양', 축도곡: '축도찬양', 마무리곡: '마무리찬양' };
 export const VALUE_KEYS = ['봉헌위원', '분병분잔', '성찬위원', '특순', '영상이름', '파송팀', '파송인원', '수료자', '수료인원', '간증자'];
 export const SPECIAL_KEYS = ['성찬식', '비전헌금', '성가대', '파송식', '수료식', '특별영상', '외부강사'];
@@ -20,7 +24,45 @@ const BLOCKS = ['순서', '시간', '담당변경', '추가', '변경'];
 const COL_BY_LABEL: Record<string, Col> = Object.fromEntries(
   [...COLS.map((c) => [norm(COL_LABELS[c]), c]), [norm('입출'), 'inout'], [norm('세부'), 'details'], [norm('마이크'), 'mic']],
 );
-const SECTION: Record<string, string> = { '1부': '1', '2부': '2', '4부': '4', p130: '4', '공통': '*' };
+
+/** What the text may name: the occasion's services (by section names) and the fields their rows use. */
+export interface ParseService { id: string; names: string[]; splitSongs?: boolean }
+export interface ParseCtx { services: ParseService[]; people: string[]; lists: string[]; values: string[]; specials: string[] }
+
+/** 주일 1부·2부·4부 (P130), used when no occasion is given. */
+export const SUNDAY_CTX: ParseCtx = {
+  services: [{ id: '1', names: ['1부'] }, { id: '2', names: ['2부'] }, { id: '4', names: ['4부', 'p130'], splitSongs: true }],
+  people: PEOPLE_KEYS, lists: [], values: [], specials: SPECIAL_KEYS,
+};
+
+export function parseCtx(rules: RulesFile, kind: Kind): ParseCtx {
+  const occ = occasionOf(rules, kind);
+  const people = new Set(rules.staffOrder), lists = new Set<string>(), values = new Set<string>(), specials = new Set<string>();
+  const services = occ.services.map((sid): ParseService => {
+    const svc = rules.services[sid];
+    for (const [k] of svc.cast) people.add(k);
+    const f = fieldsFor(svc);
+    for (const k of f.lists.keys()) lists.add(k);
+    for (const k of f.scalars.keys()) values.add(k);
+    for (const sp of svc.specials) {
+      specials.add(sp.id);
+      for (const p of sp.params) (p.list ? lists : values).add(p.key);
+    }
+    const names = [svc.label, ...svc.label.split(/[\s()（）]+/).filter((x) => x.length >= 2), ...(/^\d$/.test(sid) ? [`${sid}부`] : [])];
+    if (occ.services.length === 1) names.push(occ.label);
+    return { id: sid, names: [...new Set(names)], ...(f.lists.has('찬양1') && !f.lists.has('찬양') ? { splitSongs: true } : {}) };
+  });
+  return { services, people: [...people], lists: [...lists], values: [...values], specials: [...specials] };
+}
+
+function sectionOf(ctx: ParseCtx, label: string): string | undefined {
+  const sn = norm(label);
+  if (sn.includes('공통') || sn === '전체') return '*';
+  return ctx.services.find((s) => s.names.some((nm) => {
+    const x = norm(nm);
+    return sn.includes(x) || (sn.length >= 2 && x.includes(sn));
+  }))?.id;
+}
 
 export function parseDate(s: string): string | null {
   const t = s.trim();
@@ -46,23 +88,26 @@ export function parseSongs(text: string): { before: string[]; after: string[]; h
     if (!s || isUrl(s)) continue;
     if (isAnnounce(s)) { cur = after; hasDivider = true; continue; }
     if (/^\d{1,2}\/\d{1,2}(\/\d{2,4})?\b/.test(s) && /찬양|예배|부/.test(s)) continue;
-    cur.push(s.replace(/^\d+\s*[.)]\s*/, '').replace(/\s*->\s*/g, ' → '));
+    const song = s.replace(/^(\d+\s*[.)]|[-•·*])\s*/, '').replace(/\s*->\s*/g, ' → ');
+    if (song) cur.push(song);
   }
   return { before, after, hasDivider };
 }
 
-function keyOf(k: string): { kind: 'people' | 'list' | 'value' | 'special' | 'block' | 'num' | 'date' | 'start'; key: string } | null {
+function keyOf(k: string, ctx: ParseCtx): { kind: 'people' | 'list' | 'value' | 'special' | 'block' | 'num' | 'date' | 'start'; key: string } | null {
   const n = norm(k);
   if (n === '날짜' || n === 'date') return { kind: 'date', key: 'date' };
   if (n === '시작' || n === '시작시간') return { kind: 'start', key: 'start' };
   if (n === '보컬' || n === '보컬수') return { kind: 'num', key: 'vocals' };
   if (n === '인도자수') return { kind: 'num', key: 'leaders' };
-  for (const p of PEOPLE_KEYS) if (norm(p) === n) return { kind: 'people', key: p };
-  if (PEOPLE_ALIASES[k.trim()]) return { kind: 'people', key: PEOPLE_ALIASES[k.trim()] };
-  for (const p of LIST_KEYS) if (norm(p) === n) return { kind: 'list', key: p };
+  // the occasion's own names first: 봉독 and 특순 are people in 송구영신예배
+  for (const p of ctx.people) if (norm(p) === n) return { kind: 'people', key: p };
+  const alias = PEOPLE_ALIASES[k.trim()];
+  if (alias && ctx.people.includes(alias)) return { kind: 'people', key: alias };
+  for (const p of [...LIST_KEYS, ...ctx.lists]) if (norm(p) === n) return { kind: 'list', key: p };
   for (const [a, p] of Object.entries(LIST_ALIASES)) if (norm(a) === n) return { kind: 'list', key: p };
-  for (const p of VALUE_KEYS) if (norm(p) === n) return { kind: 'value', key: p };
-  for (const p of SPECIAL_KEYS) if (norm(p) === n) return { kind: 'special', key: p };
+  for (const p of [...VALUE_KEYS, ...ctx.values]) if (norm(p) === n) return { kind: 'value', key: p };
+  for (const p of ctx.specials) if (norm(p) === n) return { kind: 'special', key: p };
   for (const p of BLOCKS) if (norm(p) === n) return { kind: 'block', key: p };
   return null;
 }
@@ -80,7 +125,7 @@ export type NameCheck = (sid: string, name: string) => boolean;
 
 export interface ParseResult { week: WeekInput; warnings: string[] }
 
-export function parseText(text: string, fallbackDate: string, isName: NameCheck = () => false): ParseResult {
+export function parseText(text: string, fallbackDate: string, isName: NameCheck = () => false, ctx: ParseCtx = SUNDAY_CTX): ParseResult {
   const warnings: string[] = [];
   const common: { line: string; n: number }[] = [];
   const sections = new Map<string, { line: string; n: number }[]>();
@@ -89,29 +134,29 @@ export function parseText(text: string, fallbackDate: string, isName: NameCheck 
   text.split(/\r?\n/).forEach((line, i) => {
     const sec = /^\s*\[\s*([^\]]+?)\s*\]\s*$/.exec(line);
     if (sec) {
-      const sn = norm(sec[1]);
-      const id = Object.entries(SECTION).find(([k]) => sn.includes(k))?.[1];
-      if (!id) { warnings.push(`${i + 1}행: 알 수 없는 구역 [${sec[1]}] — 1부, 2부, 4부, 공통 중 하나`); cur = '?'; return; }
+      const id = sectionOf(ctx, sec[1]);
+      if (!id) { warnings.push(`${i + 1}행: 알 수 없는 구역 [${sec[1]}] — ${[...ctx.services.map((x) => x.names[0]), '공통'].join(', ')} 중 하나`); cur = '?'; return; }
       cur = id;
       if (id !== '*' && !sections.has(id)) sections.set(id, []);
       return;
     }
     const kv = /^\s*([^:：]+?)\s*[:：]\s*(.*)$/.exec(line);
-    if (kv && keyOf(kv[1])?.kind === 'date') { const d = parseDate(kv[2]); if (d) date = d; else warnings.push(`${i + 1}행: 날짜 형식 오류`); return; }
+    if (kv && keyOf(kv[1], ctx)?.kind === 'date') { const d = parseDate(kv[2]); if (d) date = d; else warnings.push(`${i + 1}행: 날짜 형식 오류`); return; }
     if (cur === '?') return;
     (cur == null || cur === '*' ? common : sections.get(cur)!).push({ line, n: i + 1 });
   });
-  const week = emptyWeek(date);
-  for (const sid of ['1', '2', '4']) week.services[sid] = emptyService(sections.size === 0 || sections.has(sid));
-  for (const sid of ['1', '2', '4']) {
-    if (!week.services[sid].include) continue;
-    applyLines(week.services[sid], common, sid, warnings, isName);
-    applyLines(week.services[sid], sections.get(sid) ?? [], sid, warnings, isName);
+  const week: WeekInput = { version: 1, date, services: {} };
+  for (const s of ctx.services) week.services[s.id] = emptyService(sections.size === 0 || sections.has(s.id));
+  for (const s of ctx.services) {
+    if (!week.services[s.id].include) continue;
+    applyLines(week.services[s.id], common, s, warnings, isName, ctx);
+    applyLines(week.services[s.id], sections.get(s.id) ?? [], s, warnings, isName, ctx);
   }
   return { week, warnings: [...new Set(warnings)] };
 }
 
-function applyLines(svc: ServiceInput, lines: { line: string; n: number }[], sid: string, warnings: string[], isName: NameCheck) {
+function applyLines(svc: ServiceInput, lines: { line: string; n: number }[], ps: ParseService, warnings: string[], isName: NameCheck, ctx: ParseCtx) {
+  const sid = ps.id;
   let block: { kind: string; key: string } | null = null;
   let songs: { key: string; buf: string[] } | null = null;
   const touched = new Set<string>();
@@ -122,19 +167,19 @@ function applyLines(svc: ServiceInput, lines: { line: string; n: number }[], sid
   const flushSongs = () => {
     if (!songs) return;
     const { before, after, hasDivider } = parseSongs(songs.buf.join('\n'));
-    if (songs.key === '찬양' && sid === '4') {
-      if (!hasDivider && before.length) warnings.push('4부 찬양: "-- 광고 --" 구분선이 없어 모두 찬양1로 넣었습니다 (찬양1:, 찬양2: 로 나눠 쓰세요)');
+    if (songs.key === '찬양' && ps.splitSongs) {
+      if (!hasDivider && before.length) warnings.push(`${ps.names[0]} 찬양: "-- 광고 --" 구분선이 없어 모두 찬양1로 넣었습니다 (찬양1:, 찬양2: 로 나눠 쓰세요)`);
       listPush('찬양1', before);
       if (after.length) listPush('찬양2', after);
     } else listPush(songs.key, [...before, ...after]);
     songs = null;
   };
-  const isSong = (key: string) => /찬양/.test(key);
+  const isSong = (key: string) => /찬양|곡$|송$/.test(key);
   for (const { line, n } of lines) {
     const s = line.trim();
     if (!s || s.startsWith('#') || s.startsWith('//')) continue;
     const kv = /^([^:：]+?)\s*[:：]\s*(.*)$/.exec(s);
-    const k = kv ? keyOf(kv[1]) : null;
+    const k = kv ? keyOf(kv[1], ctx) : null;
     if (k) {
       flushSongs();
       const v = kv![2].trim();
@@ -212,13 +257,13 @@ function handleBlock(svc: ServiceInput, sid: string, key: string, s: string, n: 
 }
 
 /** Serialize the input back to the text format (round-trips through parseText). */
-export function toText(week: WeekInput): string {
+export function toText(week: WeekInput, ctx: ParseCtx = SUNDAY_CTX): string {
   const out: string[] = [`날짜: ${week.date}`, ''];
-  for (const sid of ['1', '2', '4']) {
+  for (const { id: sid, names } of ctx.services) {
     const s = week.services[sid];
     if (!s?.include) continue;
-    out.push(`[${sid}부]`);
-    for (const k of PEOPLE_KEYS) if (s.people[k]) out.push(`${k}: ${s.people[k]}`);
+    out.push(`[${names[0]}]`);
+    for (const k of new Set([...ctx.people, ...Object.keys(s.people)])) if (s.people[k]) out.push(`${k}: ${s.people[k]}`);
     if (s.start) out.push(`시작: ${s.start}`);
     if (s.vocals != null) out.push(`보컬: ${s.vocals}`);
     if (s.leaders != null) out.push(`인도자수: ${s.leaders}`);
@@ -244,7 +289,7 @@ export function editLines(s: ServiceInput): string[] {
 }
 
 /** Reads 담당변경 / 추가 / 변경 blocks written for one service (the app's advanced editor). */
-export function parseEdits(sid: string, text: string, isName: NameCheck = () => false): { roles: RoleChange[]; edits: CellEdit[]; warnings: string[] } {
+export function parseEdits(sid: string, text: string, isName: NameCheck = () => false): { roles: RoleChange[]; edits: V1Edit[]; warnings: string[] } {
   const { week, warnings } = parseText(`[${sid}부]\n${text}`, '2000-01-02', isName);
   const s = week.services[sid];
   // line numbers refer to the editor, not the wrapped text

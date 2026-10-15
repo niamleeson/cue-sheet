@@ -4,17 +4,20 @@ import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 import JSZip from 'jszip';
 import { describe, expect, it } from 'vitest';
 import rulesJson from '../src/rules/rules.json';
-import { buildWeek, isKnownRowName } from '../src/core/engine';
+import { buildDoc, buildSheet, isKnownRowName } from '../src/core/engine';
+import { emptyDoc } from '../src/core/doc';
+import { weekToDoc } from '../src/core/migrate';
 import { parseText } from '../src/core/parse';
 import { SAMPLE_TEXT } from '../src/core/sample';
 import { W, writeDocx, TemplateError } from '../src/core/docx';
 import type { XmlImpl } from '../src/core/docx';
+import { COL_LABELS } from '../src/core/types';
 import type { RulesFile, Sheet } from '../src/core/types';
 
 const rules = rulesJson as unknown as RulesFile;
 const xml = { DOMParser, XMLSerializer } as unknown as XmlImpl;
 const { week } = parseText(SAMPLE_TEXT, '2026-10-11', (sid, n) => isKnownRowName(rules, sid, n));
-const sheets = buildWeek(rules, week);
+const sheets = buildDoc(rules, weekToDoc(rules, week));
 const tpl = (s: Sheet) => readFileSync(join(__dirname, '..', 'src', 'templates', s.template));
 const OUT = process.env.CUESHEET_OUT; // set to write the generated files for a visual check in Word
 
@@ -162,4 +165,31 @@ describe('templates', () => {
     expect(await out.file('word/_rels/document.xml.rels')!.async('string')).not.toMatch(/comments/);
     expect(await out.file('[Content_Types].xml')!.async('string')).not.toMatch(/comments/);
   });
+});
+
+describe('event sheets (가이드라인 표 4, 13-17) on the 2부 template', () => {
+  for (const kind of ['wed', 'newyear', 'baptism', 'christmas', 'yearend', 'bridge'] as const) {
+    it(kind, async () => {
+      const sheet = buildSheet(rules, emptyDoc(rules, kind, '2026-12-24'), kind);
+      const res = await writeDocx(tpl(sheet), sheet, xml);
+      if (OUT) {
+        mkdirSync(OUT, { recursive: true });
+        writeFileSync(join(OUT, sheet.fileBase + '.docx'), res.bytes);
+      }
+      const { text } = await docXml(res.bytes);
+      const ps = paraTexts(text);
+      expect(ps).toContain(sheet.title);
+      for (const r of sheet.rows) for (const c of sheet.cols) for (const l of r.cells[c]) expect(ps).toContain(l.text);
+      const trs = timelineRows(text);
+      expect(trs[0].map((tc) => tc.textContent?.trim())).toEqual(['시간', ...sheet.cols.map((c) => (c === 'inout' ? '입-출' : COL_LABELS[c]))]);
+      for (const tr of trs) expect(tr).toHaveLength(sheet.cols.length + 1);
+      // the table keeps its width: 세부사항 takes the room of the columns left out
+      const d = new DOMParser().parseFromString(text, 'application/xml');
+      const tbl = Array.from({ length: d.getElementsByTagNameNS(W, 'tbl').length }, (_, i) => d.getElementsByTagNameNS(W, 'tbl').item(i) as Element)
+        .find((t) => /세부사항/.test(t.textContent ?? ''))!;
+      const grid = Array.from({ length: tbl.getElementsByTagNameNS(W, 'gridCol').length }, (_, i) => Number((tbl.getElementsByTagNameNS(W, 'gridCol').item(i) as Element).getAttributeNS(W, 'w')));
+      expect(grid.reduce((a, b) => a + b, 0)).toBe(883 + 2605 + 808 + 898 + 629 + 1078 + 539 + 448 + 2783);
+      if (kind !== 'christmas') expect(res.warnings).toEqual([]);
+    });
+  }
 });

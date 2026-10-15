@@ -8,8 +8,10 @@ import type { RulesFile, ServiceInput, Sheet, WeekInput } from '../core/types';
 import { templateBytes } from './templates';
 
 export const rules = rulesJson as unknown as RulesFile;
-/** Service ids in display order: 1부, 2부, 4부. */
-export const SIDS = Object.keys(rules.services);
+/** Every service id of the rules: 1부, 2부, 4부, then the events'. */
+const SIDS = Object.keys(rules.services);
+/** Sunday sheets print on one page (the church's templates); an event's program may run longer. */
+export const ONE_PAGE = new Set(rules.occasions.find((o) => o.id === 'sunday')?.services ?? []);
 export const isName = (sid: string, n: string) => isKnownRowName(rules, sid, n);
 /** Same XML implementation as the tests, so the app writes exactly what was verified against Word. */
 export const XML = { DOMParser, XMLSerializer } as unknown as XmlImpl;
@@ -27,7 +29,7 @@ export const isValidDate = (s: string) => {
   return ymd(new Date(y, m - 1, d)) === s;
 };
 /** Today if it is Sunday, otherwise the coming Sunday. */
-export function upcomingSunday(now = new Date()): string {
+function upcomingSunday(now = new Date()): string {
   const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
   return ymd(d);
@@ -42,43 +44,12 @@ export const weekdayOf = (date: string) => {
 };
 
 // ---------- persistence ----------
-const WEEK_KEY = 'cuesheet.week';
 const FOLDER_KEY = 'cuesheet.folder';
 
-export function loadWeek(): WeekInput | null {
-  try {
-    const s = localStorage.getItem(WEEK_KEY);
-    return s ? normalizeWeek(JSON.parse(s)) : null;
-  } catch {
-    return null;
-  }
-}
-export function saveWeek(w: WeekInput) {
-  try {
-    localStorage.setItem(WEEK_KEY, JSON.stringify(w));
-  } catch {
-    /* storage full or unavailable: the week stays in memory */
-  }
-}
 export const lastFolder = () => localStorage.getItem(FOLDER_KEY) ?? undefined;
 export const rememberFolder = (p: string) => localStorage.setItem(FOLDER_KEY, p);
 
-/** Next Sunday's input: same people and team sizes, everything week-specific cleared. */
-export function nextWeek(w: WeekInput): WeekInput {
-  const out = emptyWeek(addDays(w.date, 7));
-  for (const sid of SIDS) {
-    const s = w.services[sid] ?? emptyService(false);
-    const n: ServiceInput = { ...emptyService(s.include), people: { ...s.people } };
-    if (s.vocals != null) n.vocals = s.vocals;
-    if (s.leaders != null) n.leaders = s.leaders;
-    out.services[sid] = n;
-  }
-  return out;
-}
-
-export const weekFileName = (w: WeekInput) => `큐시트 입력 ${w.date}.cuesheet.json`;
-
-/** Validates a saved input file (or the autosave) and fills in anything missing. */
+/** Validates a v0.1 input file (or v0.1's autosave) and fills in anything missing. */
 export function normalizeWeek(x: unknown): WeekInput {
   const o = x as { date?: unknown; services?: Record<string, unknown> } | null;
   if (!o || typeof o !== 'object' || !o.services || typeof o.services !== 'object') throw new Error('큐시트 입력 파일이 아닙니다');
@@ -121,5 +92,5 @@ function normalizeService(s: Record<string, any>): ServiceInput {
 // ---------- output ----------
 export async function makeDocx(sheet: Sheet) {
   const tpl = await templateBytes(sheet.serviceId, sheet.template);
-  return writeDocx(tpl, sheet, XML);
+  return writeDocx(tpl, sheet, XML, { onePage: ONE_PAGE.has(sheet.serviceId) });
 }

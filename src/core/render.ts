@@ -6,7 +6,7 @@
  * gradients, outlines and shadows. Output is one SVG in points.
  */
 import {
-  W, WP, ascentTw, attr, borderTw, boxOf, cellHeight, cellMar, descentTw, gapBelow, isEl, kid, kids, num, paraLayout, renderedHeight, rowExtra, topEdge,
+  W, WP, ascentTw, attr, borderTw, boxOf, cellHeight, cellMar, descentTw, gapBelow, isEl, kid, kids, nfc, num, paraLayout, renderedHeight, rowExtra, textOf, topEdge,
 } from './layout';
 import type { Box, Metrics, ParaLayout } from './layout';
 
@@ -38,6 +38,22 @@ export interface RenderOptions {
   id?: string;
 }
 export interface PageRow { key: string; x: number; y: number; w: number; h: number }
+/**
+ * A table cell on the page (pt). `table` counts the body's tables; the cell starts in row `row` (and runs to `last`
+ * when merged down) and covers grid columns `g0` to `g1` (exclusive). `paras` are its paragraphs, top to bottom.
+ */
+export interface PageCell {
+  table: number;
+  row: number;
+  last: number;
+  g0: number;
+  g1: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  paras: { y: number; h: number; text: string }[];
+}
 export interface PageRender {
   svg: string;
   /** page size (pt) */
@@ -49,6 +65,12 @@ export interface PageRender {
   viewHeight: number;
   /** the service rows on the page (pt) */
   rows: PageRow[];
+  /** every table cell (pt), for clicking a cell to edit it */
+  cells: PageCell[];
+  /** first-row label of each grid column, per body table (NFC, spaces removed) */
+  tables: string[][];
+  /** the cue sheet table and its first service row */
+  timeline: { table: number; first: number };
 }
 
 // ---------- small helpers ----------
@@ -182,6 +204,8 @@ class Page {
   front: string[] = [];
   hits: string[] = [];
   rows: PageRow[] = [];
+  cells: PageCell[] = [];
+  tables: string[][] = [];
   bottom = 0;
   private ids = new Map<string, string>();
 
@@ -445,7 +469,7 @@ class Page {
 
   // ----- tables -----
   /** Draws a table whose left edge (the outside of its left border) is at x0 and top at y0; returns its height. */
-  table(tbl: Element, x0: number, y0: number, svc?: { first: number; keys: string[] }): number {
+  table(tbl: Element, x0: number, y0: number, svc?: { first: number; keys: string[] }, ti = -1): number {
     const box = boxOf(tbl, this.m);
     const trs = kids(tbl, 'tr');
     if (!trs.length) return 0;
@@ -541,7 +565,18 @@ class Page {
       const cTop = top + rm.top, cBot = ruleBot - lm.bottom;
       const va = attr(kid(tcPr, 'vAlign'), 'val');
       let y = va === 'center' ? cTop + (cBot - cTop - total) / 2 : va === 'bottom' ? cBot - total : cTop;
-      ps.forEach((p, i) => (y += this.para(p, x + inL, y, w - inL - inR, '#000000', pls[i])));
+      const paras: PageCell['paras'] = [];
+      ps.forEach((p, i) => {
+        const dy = this.para(p, x + inL, y, w - inL - inR, '#000000', pls[i]);
+        paras.push({ y: y / 20, h: dy / 20, text: textOf(p) });
+        y += dy;
+      });
+      if (ti >= 0) this.cells.push({ table: ti, row: c.row, last: c.last, g0: c.g0, g1: c.g1, x: x / 20, y: top / 20, w: w / 20, h: (bot - top) / 20, paras });
+    }
+    if (ti >= 0) {
+      const labels: string[] = [];
+      for (const c of cells) if (c.row === 0) for (let g = c.g0; g < c.g1; g++) labels[g] = nfc(textOf(c.tc));
+      this.tables[ti] = labels;
     }
 
     if (svc) {
@@ -582,15 +617,15 @@ export function renderPage(page: PageInput, opts: RenderOptions, parser: Parser)
 
   let y = mg.top;
   let ti = 0;
-  const floats: { tbl: Element; svc?: { first: number; keys: string[] } }[] = [];
+  const floats: { tbl: Element; svc?: { first: number; keys: string[] }; ti: number }[] = [];
   const placeFloat = (anchorY: number) => {
-    for (const { tbl, svc } of floats.splice(0)) {
+    for (const { tbl, svc, ti } of floats.splice(0)) {
       const tp = kid(kid(tbl, 'tblPr'), 'tblpPr');
       const h = attr(tp, 'horzAnchor'), v = attr(tp, 'vertAnchor');
       const tx = num(tp, 'tblpX') ?? 0, ty = num(tp, 'tblpY') ?? 0;
       const x = h === 'page' ? tx : mg.left + tx;
       const top = v === 'page' ? ty : v === 'margin' ? mg.top + ty : anchorY + ty;
-      out.table(tbl, x, top, svc);
+      out.table(tbl, x, top, svc, ti);
     }
   };
   for (const el of kids(body)) {
@@ -598,10 +633,11 @@ export function renderPage(page: PageInput, opts: RenderOptions, parser: Parser)
       placeFloat(y);
       y += out.para(el, mg.left, y, textW, '#000000');
     } else if (el.localName === 'tbl') {
-      const svc = ti++ === page.rows.table ? { first: page.rows.first, keys: opts.rowKeys } : undefined;
+      const i = ti++;
+      const svc = i === page.rows.table ? { first: page.rows.first, keys: opts.rowKeys } : undefined;
       const tblPr = kid(el, 'tblPr');
-      if (kid(tblPr, 'tblpPr')) floats.push({ tbl: el, svc });
-      else y += out.table(el, mg.left + (num(kid(tblPr, 'tblInd'), 'w') ?? 0), y, svc);
+      if (kid(tblPr, 'tblpPr')) floats.push({ tbl: el, svc, ti: i });
+      else y += out.table(el, mg.left + (num(kid(tblPr, 'tblInd'), 'w') ?? 0), y, svc, i);
     }
   }
   placeFloat(y);
@@ -623,5 +659,5 @@ export function renderPage(page: PageInput, opts: RenderOptions, parser: Parser)
     `<g class="front">${out.front.join('')}</g>` +
     `<g class="hits">${out.hits.join('')}</g>` +
     `</svg>`;
-  return { svg, width: W_, height: H_, bottom: out.bottom / 20, viewHeight: bottom, rows: out.rows };
+  return { svg, width: W_, height: H_, bottom: out.bottom / 20, viewHeight: bottom, rows: out.rows, cells: out.cells, tables: out.tables, timeline: page.rows };
 }

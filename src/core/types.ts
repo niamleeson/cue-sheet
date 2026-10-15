@@ -62,22 +62,92 @@ export interface ServiceRules {
   /** [input key, label, optional?] */
   cast: [string, string, boolean?][];
   roleMics: Record<string, string>;
+  /** timeline columns of this service's table (event tables drop 입-출/무대) */
+  cols: Col[];
   rehearsal: { dur: number; cells: Record<string, RuleLine[]> };
   rows: RowRule[];
   specials: SpecialRule[];
   timer?: { from: string; to: string };
 }
 
+export type Kind = 'sunday' | 'wed' | 'newyear' | 'baptism' | 'christmas' | 'yearend' | 'bridge';
+export interface Occasion { id: Kind; label: string; services: string[]; weekday?: number | null; note?: string }
+
 export interface RulesFile {
   guideline: string;
   staffOrder: string[];
   services: Record<string, ServiceRules>;
+  occasions: Occasion[];
 }
 
-// ---------------- input ----------------
+// ---------------- document (v2): one per Sunday / event ----------------
+
+export interface Fields {
+  /** 사회, 설교, 인도, 나래이션, PD, FD, 음향 ... */
+  people: Record<string, string>;
+  /** scalar tokens: 봉헌위원, 분병분잔, 특순, 영상이름 ... */
+  values: Record<string, string>;
+  /** list tokens: 찬양, 본문, 설교제목, 봉헌찬양 ... */
+  lists: Record<string, string[]>;
+}
+
+/** Places `key` right after `after` (null = first); `before` is the fallback anchor. `title` marks a row the user added. */
+export interface Move { key: string; after: string | null; before?: string | null; title?: string }
+
+/** Per-service data. A key present here (even '') overrides the document's shared value. */
+export interface ServiceDoc extends Fields {
+  start?: string;
+  vocals?: number;
+  leaders?: number;
+  /** explicit on/off per special; missing = automatic (guideline) */
+  specials: Record<string, boolean>;
+  moves: Move[];
+  /** rows taken out of this service */
+  off: string[];
+  durs: Record<string, number>;
+}
+
+/** Cells the preview can edit: a timeline column, the time cell, the split rehearsal light cell or a header block. */
+export type EditCol = Col | 'time' | 'lightA' | 'lightB' | 'staff' | 'cast' | 'mics' | 'videos';
+
+/** Line-level change applied to a finished cell; anchors are matched by text so edits survive upstream changes. */
+export type LineOp =
+  | { op: 'remove'; line: string }
+  | { op: 'replace'; line: string; with: string }
+  | { op: 'insert'; after: string | null; line: string }
+  | { op: 'append'; line: string }
+  | { op: 'set'; lines: string[] }
+  | { op: 'sub'; from: string; to: string };
+
+export interface CellEdit {
+  id: string;
+  /** row key, 'rehearsal' or 'header' */
+  row: string;
+  col: EditCol;
+  services: string[];
+  ops: LineOp[];
+  /** linked changes in other cells of the same row (담당 변경 → 음향 Mic) */
+  also?: { col: EditCol; ops: LineOp[] }[];
+  at: string;
+  note?: string;
+}
+
+export interface CueDoc {
+  v: 2;
+  id: string;
+  kind: Kind;
+  date: string; // YYYY-MM-DD
+  name?: string;
+  updatedAt: string;
+  shared: Fields;
+  services: Record<string, ServiceDoc>;
+  edits: CellEdit[];
+}
+
+// ---------------- v1 input (text import and old files) ----------------
 
 export interface OrderEntry { ref: string; dur?: number }
-export interface CellEdit { row: string; col: Col; mode: 'replace' | 'append'; lines: string[] }
+export interface V1Edit { row: string; col: Col; mode: 'replace' | 'append'; lines: string[] }
 export interface RoleChange { row: string; from: string; to: string }
 
 export interface ServiceInput {
@@ -96,7 +166,7 @@ export interface ServiceInput {
   order?: OrderEntry[];
   durations?: Record<string, number>;
   roles?: RoleChange[];
-  edits?: CellEdit[];
+  edits?: V1Edit[];
   headerVideos?: string[];
 }
 
@@ -108,7 +178,9 @@ export interface WeekInput {
 
 // ---------------- output ----------------
 
-export interface OutLine { text: string; bold?: boolean }
+/** Where a finished line came from, so a preview edit can be written back to the field. */
+export type LineSrc = { list: string; i: number; fmt: string } | { tpl: string };
+export interface OutLine { text: string; bold?: boolean; src?: LineSrc }
 export type Severity = 'info' | 'warn';
 export interface Warning { level: Severity; row?: string; text: string }
 
@@ -123,6 +195,12 @@ export interface SheetRow {
   source: Source;
   flags: string[];
   shade?: string;
+  /** special that added this row */
+  special?: string;
+  /** added by the user (순서 추가) */
+  custom?: boolean;
+  /** fill-in tokens used by this row */
+  fields: { lists: string[]; values: string[] };
 }
 
 export interface Sheet {
@@ -133,6 +211,7 @@ export interface Sheet {
   dateText: string;
   fileBase: string;
   template: string;
+  cols: Col[];
   rehearsal: { time: string[]; cells: Record<string, OutLine[]> };
   rows: SheetRow[];
   end: string;
@@ -140,4 +219,8 @@ export interface Sheet {
   specials: { id: string; label: string; enabled: boolean; auto: boolean; source: Source }[];
   warnings: Warning[];
   prep: string[];
+  /** rows taken out (되살리기) */
+  removed: { key: string; name: string }[];
+  /** edit id → every line change found its anchor */
+  editStatus: Record<string, boolean>;
 }

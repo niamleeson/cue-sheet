@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import rulesJson from '../src/rules/rules.json';
-import { buildSheet, buildWeek, isKnownRowName } from '../src/core/engine';
+import { buildDoc, buildSheet, isKnownRowName } from '../src/core/engine';
+import { weekToDoc } from '../src/core/migrate';
 import { parseText } from '../src/core/parse';
 import { SAMPLE_TEXT } from '../src/core/sample';
 import type { RulesFile } from '../src/core/types';
 
 const rules = rulesJson as unknown as RulesFile;
 const { week } = parseText(SAMPLE_TEXT, '2026-10-11', (sid, n) => isKnownRowName(rules, sid, n));
+const doc = weekToDoc(rules, week);
 const text = (ls: { text: string }[]) => ls.map((l) => l.text);
 
 describe('2026-10-11 4부 (P130) — matches the reviewed sheet', () => {
-  const sheet = buildSheet(rules, '4', week);
+  const sheet = buildSheet(rules, doc, '4');
 
   it('order and times', () => {
     expect(sheet.rows.map((r) => [r.cells.content[0].text, r.time.join(' ')])).toEqual([
@@ -61,7 +63,7 @@ describe('2026-10-11 4부 (P130) — matches the reviewed sheet', () => {
 });
 
 describe('2026-10-11 all services from one input', () => {
-  const sheets = buildWeek(rules, week);
+  const sheets = buildDoc(rules, doc);
   it('builds 1부, 2부 and 4부 with their own data', () => {
     expect(sheets.map((s) => s.label)).toEqual(['1부', '2부', '4부 (P130)']);
     expect(sheets.map((s) => s.fileBase)).toEqual(['2026 1011 주일1부예배 큐시트', '2026 1011 주일2부예배 큐시트', '2026 1011 주일4부예배P130 큐시트']);

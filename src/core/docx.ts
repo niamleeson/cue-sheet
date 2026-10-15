@@ -253,14 +253,35 @@ async function stripComments(zip: JSZip, doc: Document) {
 }
 
 // ---------- main ----------
-const TIMELINE_LABELS: Record<string, 'time' | Col> = {
+export const TIMELINE_LABELS: Record<string, 'time' | Col> = {
   시간: 'time', 내용: 'content', 담당: 'role', 음향: 'mic', 화면: 'screen', 조명: 'light', '입-출': 'inout', 입출: 'inout', 무대: 'stage', 세부사항: 'details',
 };
-const HEADER_LABELS: Record<string, 'staff' | 'cast' | 'check'> = { 프로그램진행: 'staff', 출연: 'cast', 체크사항: 'check' };
+export const HEADER_LABELS: Record<string, 'staff' | 'cast' | 'check'> = { 프로그램진행: 'staff', 출연: 'cast', 체크사항: 'check' };
 const NARROW = new Set<'time' | Col>(['time', 'role', 'mic', 'screen', 'light', 'inout', 'stage']);
 const SAFETY = 200; // twips kept free at the bottom of the page
 
-export async function writeDocx(template: ArrayBuffer | Uint8Array, sheet: Sheet, xml: XmlImpl = globalThis as unknown as XmlImpl): Promise<DocxResult> {
+/** Removes timeline columns not in `keep`; 세부사항 takes their width so the table keeps its size. */
+function dropColumns(timeline: Element, colOf: ('time' | Col)[], keep: Set<'time' | Col>) {
+  const drop = colOf.map((c, i) => (keep.has(c) ? -1 : i)).filter((i) => i >= 0);
+  const grid = kids(kid(timeline, 'tblGrid'), 'gridCol');
+  const trs = kids(timeline, 'tr');
+  if (grid.length !== colOf.length || trs.some((tr) => kids(tr, 'tc').length !== colOf.length))
+    throw new TemplateError('서식의 큐시트 표에 합쳐진 칸이 있어 이 예배의 칸 구성으로 바꿀 수 없습니다');
+  const wide = colOf.indexOf('details');
+  const extra = drop.reduce((a, i) => a + (num(grid[i], 'w') ?? 0), 0);
+  const widen = (el: Element | undefined) => {
+    if (el && wide >= 0 && (el.localName === 'gridCol' || attr(el, 'type') === 'dxa')) el.setAttributeNS(W, 'w:w', String((num(el, 'w') ?? 0) + extra));
+  };
+  widen(grid[wide]);
+  for (const tr of trs) {
+    const tcs = kids(tr, 'tc');
+    widen(kid(kid(tcs[wide], 'tcPr'), 'tcW'));
+    for (const i of drop) tr.removeChild(tcs[i]);
+  }
+  for (const i of drop) grid[i].parentNode!.removeChild(grid[i]);
+}
+
+export async function writeDocx(template: ArrayBuffer | Uint8Array, sheet: Sheet, xml: XmlImpl = globalThis as unknown as XmlImpl, opts: { onePage?: boolean } = {}): Promise<DocxResult> {
   const warnings: string[] = [];
   const zip = await JSZip.loadAsync(template);
   const docFile = zip.file('word/document.xml');
@@ -337,8 +358,14 @@ export async function writeDocx(template: ArrayBuffer | Uint8Array, sheet: Sheet
 
   // timeline structure
   const rows = kids(timeline, 'tr');
-  const colOf: ('time' | Col)[] = kids(rows[0], 'tc').map((c) => TIMELINE_LABELS[nfc(textOf(c))]);
-  const expected = ['time', ...COLS];
+  const labels = () => kids(rows[0], 'tc').map((c) => TIMELINE_LABELS[nfc(textOf(c))]);
+  const expected: ('time' | Col)[] = ['time', ...(sheet.cols ?? COLS)];
+  let colOf: ('time' | Col)[] = labels();
+  // event tables leave out columns (입-출, 무대): take them out of an 8-column template
+  if (expected.length < colOf.length && expected.every((c) => colOf.includes(c))) {
+    dropColumns(timeline, colOf, new Set(expected));
+    colOf = labels();
+  }
   if (colOf.length !== expected.length || colOf.some((c, i) => c !== expected[i]))
     throw new TemplateError(`서식의 큐시트 표 칸이 다릅니다 (${kids(rows[0], 'tc').map((c) => textOf(c)).join(', ')})`);
   const box = boxOf(timeline, metrics);
@@ -450,7 +477,7 @@ export async function writeDocx(template: ArrayBuffer | Uint8Array, sheet: Sheet
   const target = Math.min(templateTotal, capacity);
   const scale = innerTotal > 0 && naturalTotal < target ? Math.min((target - extraTotal) / innerTotal, 2) : 1;
   built.forEach((tr, i) => setHeight(doc, tr, inner[i] * scale));
-  if (naturalTotal > capacity)
+  if (naturalTotal > capacity && opts.onePage !== false)
     warnings.push(`내용이 한 페이지를 넘을 수 있습니다 (예상 ${Math.round((naturalTotal / capacity) * 100)}%) — 줄이 긴 칸을 줄이거나 Word에서 확인하세요`);
 
   let out = new xml.XMLSerializer().serializeToString(doc);

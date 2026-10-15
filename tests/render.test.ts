@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest';
 import rulesJson from '../src/rules/rules.json';
 import { writeDocx } from '../src/core/docx';
 import type { XmlImpl } from '../src/core/docx';
-import { buildWeek, isKnownRowName } from '../src/core/engine';
+import { buildDoc, isKnownRowName } from '../src/core/engine';
+import { weekToDoc } from '../src/core/migrate';
 import { parseText } from '../src/core/parse';
 import { renderPage } from '../src/core/render';
 import { SAMPLE_TEXT } from '../src/core/sample';
@@ -15,7 +16,7 @@ import type { RulesFile, Sheet } from '../src/core/types';
 const rules = rulesJson as unknown as RulesFile;
 const xml = { DOMParser, XMLSerializer } as unknown as XmlImpl;
 const { week } = parseText(SAMPLE_TEXT, '2026-10-11', (sid, n) => isKnownRowName(rules, sid, n));
-const sheets = buildWeek(rules, week);
+const sheets = buildDoc(rules, weekToDoc(rules, week));
 const tpl = (s: Sheet) => readFileSync(join(__dirname, '..', 'src', 'templates', s.template));
 const OUT = process.env.CUESHEET_OUT; // set to write the pages as SVG for a visual check
 

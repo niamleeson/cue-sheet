@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import raw from '../src/rules/guideline-raw.json';
 import rulesJson from '../src/rules/rules.json';
 import { buildSheet, emptyWeek } from '../src/core/engine';
+import { weekToDoc } from '../src/core/migrate';
 import { COLS } from '../src/core/types';
 import type { OutLine, RulesFile, Sheet, SheetRow } from '../src/core/types';
 
@@ -44,7 +45,7 @@ const act = (row: SheetRow, skipTime = false) => ({
 const sheet = (sid: string, date = '2026-10-18', patch: (w: ReturnType<typeof emptyWeek>) => void = () => {}): Sheet => {
   const w = emptyWeek(date);
   patch(w);
-  return buildSheet(rules, sid, w);
+  return buildSheet(rules, weekToDoc(rules, w), sid);
 };
 const row = (s: Sheet, key: string) => {
   const r = s.rows.find((x) => x.key === key);

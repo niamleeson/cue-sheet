@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import rulesJson from '../src/rules/rules.json';
 import { buildSheet, emptyService, isKnownRowName, rowNamesFor } from '../src/core/engine';
+import { weekToDoc } from '../src/core/migrate';
 import { editLines, parseDate, parseEdits, parseSongs, parseText, toText } from '../src/core/parse';
 import { SAMPLE_TEXT } from '../src/core/sample';
 import type { RulesFile } from '../src/core/types';
@@ -125,7 +126,7 @@ describe('parseText', () => {
 describe('engine uses parsed names', () => {
   it('applies durations, role changes and edits given by row name', () => {
     const { week } = parse(`날짜: 2026-10-18\n[2부]\n시간:\n설교 35\n추가:\n설교 | 세부사항 | -추가 줄`);
-    const sheet = buildSheet(rules, '2', week);
+    const sheet = buildSheet(rules, weekToDoc(rules, week), '2');
     const sermon = sheet.rows.find((r) => r.key === 'sermon')!;
     expect(sermon.dur).toBe(35);
     expect(sermon.cells.details.at(-1)?.text).toBe('-추가 줄');
@@ -167,7 +168,7 @@ describe('app helpers', () => {
   it('ignores blank order entries (a row being added in the app)', () => {
     const { week } = parse(`날짜: 2026-10-18\n[4부]\n순서:\n찬양 1\n설교`);
     week.services['4'].order!.splice(1, 0, { ref: '  ' });
-    const sheet = buildSheet(rules, '4', week);
+    const sheet = buildSheet(rules, weekToDoc(rules, week), '4');
     expect(sheet.rows.map((r) => r.name)).toEqual(['찬양 1', '설교']);
     expect(sheet.rows.some((r) => r.key.startsWith('custom:'))).toBe(false);
     expect(toText(week)).not.toMatch(/순서:\n찬양 1\n\s*\n/);
@@ -175,10 +176,10 @@ describe('app helpers', () => {
 
   it('role changes replace whole words only, with any characters in the name', () => {
     const week = parse(`날짜: 2026-10-18\n[4부]\n담당변경:\n성경 봉독: 사회자 -> 봉독자(1)`).week;
-    const sheet = buildSheet(rules, '4', week);
+    const sheet = buildSheet(rules, weekToDoc(rules, week), '4');
     const row = sheet.rows.find((r) => r.name === '성경 봉독')!;
     expect(row.cells.role.map((l) => l.text)).toContain('봉독자(1)');
-    const before = buildSheet(rules, '4', parse('날짜: 2026-10-18\n[4부]').week).rows.find((r) => r.name === '성경 봉독')!;
+    const before = buildSheet(rules, weekToDoc(rules, parse('날짜: 2026-10-18\n[4부]').week), '4').rows.find((r) => r.name === '성경 봉독')!;
     const expected = before.cells.details.map((l) => l.text.split('사회자').join('봉독자(1)'));
     expect(row.cells.details.map((l) => l.text)).toEqual(expected);
   });

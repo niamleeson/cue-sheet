@@ -45,6 +45,16 @@
     "설교자": "헤드셋 Mic",
     "인도자": "인도자 Mic"
    },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "inout",
+    "stage",
+    "details"
+   ],
    "rehearsal": {
     "dur": 60,
     "cells": {
@@ -1102,6 +1112,16 @@
     "봉독자": "나래이션 Mic",
     "사회자": "사회자 Mic"
    },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "inout",
+    "stage",
+    "details"
+   ],
    "rehearsal": {
     "dur": 60,
     "cells": {
@@ -2073,6 +2093,16 @@
     "설교자": "설교자 Mic",
     "인도자": "인도자 Mic"
    },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "inout",
+    "stage",
+    "details"
+   ],
    "rehearsal": {
     "dur": 60,
     "cells": {
@@ -2877,6 +2907,3008 @@
     "from": "praise1",
     "to": "praise2"
    }
+  },
+  "wed": {
+   "id": "wed",
+   "label": "수요성령집회",
+   "title": "수요성령집회 Cue-Sheet",
+   "start": "19:15",
+   "template": "service2.docx",
+   "fileName": "{yyyy} {mmdd} 수요성령집회 큐시트",
+   "guidelineTable": 4,
+   "source": {
+    "kind": "supplement",
+    "ref": "표 4 (수요성령집회)",
+    "note": "출연(헤더) 항목은 가이드라인 표에 없음 — 각 행의 담당 기준으로 구성"
+   },
+   "defaults": {
+    "vocals": 4,
+    "leaders": 1
+   },
+   "cast": [
+    [
+     "인도",
+     "인도"
+    ],
+    [
+     "설교",
+     "설교"
+    ]
+   ],
+   "roleMics": {
+    "설교자": "헤드셋 Mic",
+    "인도자": "인도자 Mic",
+    "사회자": "사회자 Mic"
+   },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "stage",
+    "details"
+   ],
+   "rehearsal": {
+    "dur": 75,
+    "cells": {
+     "content": [
+      "▶셋업 및 리허설",
+      "- 무대 셋업 (악기, 강대상)",
+      "- 찬양팀 리허설",
+      "- 자막/음향/조명 리허설"
+     ],
+     "role": [
+      "다함께"
+     ],
+     "mic": [
+      "헤드셋 Mic",
+      "인도자 Mic",
+      "보컬 Mic #1-{vocals|4}",
+      "Full Band"
+     ],
+     "screen": [],
+     "lightA": [
+      "리허설 중",
+      "무빙 리허설 하우스앞,뒤 10%"
+     ],
+     "lightB": [
+      "리허설 후",
+      "Pre 100%",
+      "하우스앞,뒤 10%"
+     ],
+     "stage": [],
+     "details": [
+      "-설교자, 찬양인도자 물",
+      "-무선마이크 베터리 잔량 확인",
+      "-타이머 확인(찬양, 설교)",
+      "-VD: 예배시작 7:30PM 카운트 다운 세팅",
+      "-AD: 리허설 후 BGM"
+     ]
+    }
+   },
+   "rows": [
+    {
+     "key": "standby",
+     "name": "STAND-BY",
+     "aliases": [],
+     "dur": 15,
+     "cells": {
+      "content": [
+       "▶STAND-BY"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "BGM"
+      ],
+      "light": [
+       "Pre 100%",
+       "하우스앞,뒤 10%"
+      ]
+     }
+    },
+    {
+     "key": "praise",
+     "name": "찬양",
+     "aliases": [],
+     "dur": 35,
+     "cells": {
+      "content": [
+       "▶찬양",
+       {
+        "list": "찬양",
+        "fmt": "{n}. {item}",
+        "default": [
+         "찬양 1",
+         "찬양 2",
+         "찬양 3",
+         "찬양 4",
+         "찬양 5",
+         "찬양 6"
+        ]
+       }
+      ],
+      "role": [
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "인도자 Mic",
+       "싱어 Mic 1-4"
+      ],
+      "screen": [
+       "가사자막"
+      ],
+      "light": [
+       "곡별무빙",
+       "인도자 30%",
+       "무대 40%",
+       "악기 50%",
+       "하우스앞,뒤 5%"
+      ],
+      "details": [
+       "-인도자 1. 찬양팀 4",
+       "-찬양시간 {dur}분 세팅"
+      ]
+     }
+    },
+    {
+     "key": "prayer1",
+     "name": "합심 기도",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶합심 기도"
+      ],
+      "role": [
+       "설교자",
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "인도자 Mic",
+       "기타"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞,뒤 5%"
+      ],
+      "details": [
+       "-합심 기도시 강대상 세팅",
+       "-설교자 등단 (하수)",
+       "-싱어 하단 (상수/하수)",
+       "-합심기도 시작시 싱어들 퇴장후 회중 백업"
+      ]
+     }
+    },
+    {
+     "key": "bible",
+     "name": "성경 봉독",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶성경 봉독",
+       {
+        "list": "본문",
+        "fmt": "- {item}",
+        "default": [
+         "성경구절"
+        ]
+       }
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞,뒤 70%"
+      ],
+      "details": [
+       "-밴드 하단 (상수)"
+      ]
+     }
+    },
+    {
+     "key": "sermon",
+     "name": "설교",
+     "aliases": [],
+     "dur": 25,
+     "cells": {
+      "content": [
+       "▶설교",
+       {
+        "list": "설교제목",
+        "fmt": "- {item}",
+        "default": [
+         "설교제목"
+        ]
+       }
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "screen": [
+       "설교제목",
+       "설교관련",
+       "자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞,뒤 70%"
+      ],
+      "details": [
+       "-설교 OUTLINE 적용",
+       "-설교시간 {dur}분 타이머",
+       "-마무리 기도시 밴드 등단"
+      ]
+     },
+     "shade": "D9D9D9"
+    },
+    {
+     "key": "postpraise",
+     "name": "설교 후 찬양",
+     "aliases": [],
+     "dur": 5,
+     "cells": {
+      "content": [
+       "▶설교 후 찬양",
+       {
+        "list": "설교후찬양",
+        "fmt": "- {item}",
+        "default": [
+         "찬양곡"
+        ]
+       }
+      ],
+      "role": [
+       "설교자",
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "인도자 Mic",
+       "보컬 Mic #1-{vocals|4}",
+       "Full Band"
+      ],
+      "screen": [
+       "가사자막"
+      ],
+      "light": [
+       "무빙 9번",
+       "인도자 30%",
+       "무대 40%",
+       "악기 50%",
+       "하우스앞,뒤 10%"
+      ],
+      "details": [
+       "-싱어 회중에서 백업"
+      ]
+     }
+    },
+    {
+     "key": "prayer2",
+     "name": "합심 기도",
+     "aliases": [],
+     "dur": 15,
+     "cells": {
+      "content": [
+       "▶합심 기도"
+      ],
+      "role": [
+       "설교자",
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "인도자 Mic",
+       "보컬 Mic #1-{vocals|4}",
+       "Full Band"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 30%",
+       "무대 40%",
+       "악기 50%",
+       "하우스앞,뒤 5%"
+      ],
+      "details": [
+       "-기도시간 {dur}분 타이머",
+       "-백업 찬양"
+      ]
+     }
+    },
+    {
+     "key": "closing",
+     "name": "광고 및 마무리",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶광고 및 마무리"
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞,뒤 70%"
+      ]
+     }
+    }
+   ],
+   "specials": []
+  },
+  "newyear": {
+   "id": "newyear",
+   "label": "신년집회",
+   "title": "신년집회 Cue-Sheet",
+   "start": "19:30",
+   "template": "service2.docx",
+   "fileName": "{yyyy} {mmdd} 신년집회 큐시트",
+   "guidelineTable": 13,
+   "source": {
+    "kind": "supplement",
+    "ref": "표 13 (신년집회)",
+    "note": "출연(헤더) 항목은 가이드라인 표에 없음 — 각 행의 담당 기준으로 구성"
+   },
+   "defaults": {
+    "vocals": 4,
+    "leaders": 1
+   },
+   "cast": [
+    [
+     "인도",
+     "인도"
+    ],
+    [
+     "사회",
+     "사회"
+    ],
+    [
+     "설교",
+     "설교"
+    ],
+    [
+     "특순",
+     "특순",
+     true
+    ]
+   ],
+   "roleMics": {
+    "설교자": "헤드셋 Mic",
+    "인도자": "인도자 Mic",
+    "사회자": "사회자 Mic"
+   },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "inout",
+    "stage",
+    "details"
+   ],
+   "rehearsal": {
+    "dur": 60,
+    "cells": {
+     "content": [
+      "▶리허설",
+      "- 악기, 무대 세팅 ({t-60})",
+      "- 찬양팀 ({t-45}-{t-20})",
+      "- 자막/영상/음향 ({t-60}-{t-10})",
+      "- 교회소식 슬라이드/BGM"
+     ],
+     "role": [
+      "다함께"
+     ],
+     "mic": [
+      "헤드셋 Mic",
+      "인도자 Mic",
+      "사회자 Mic",
+      "보컬 Mic #1-{vocals|4}",
+      "Full Band"
+     ],
+     "screen": [],
+     "lightA": [
+      "무빙 리허설",
+      "인도자 65%",
+      "무대 65%",
+      "악기 30%",
+      "하우스앞뒤 40%"
+     ],
+     "lightB": [
+      "Pre 100%",
+      "하우스앞뒤 20%"
+     ],
+     "inout": [],
+     "stage": [],
+     "details": [
+      "-강대상위치(큐시트,물)",
+      "-설교자, 찬양인도자, 사회자 물",
+      "-무선마이크 배터리 잔량 확인",
+      "-타이머 확인(찬양, 설교)",
+      "-무대 조명 세팅"
+     ]
+    }
+   },
+   "rows": [
+    {
+     "key": "intro",
+     "name": "인트로 영상",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶인트로 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "Pre 0%",
+       "하우스앞 0%",
+       "하우스뒤 5%"
+      ]
+     },
+     "video": "인트로 영상"
+    },
+    {
+     "key": "praise",
+     "name": "찬양",
+     "aliases": [],
+     "dur": 25,
+     "cells": {
+      "content": [
+       "▶찬양",
+       {
+        "list": "찬양",
+        "fmt": "{n}. {item}",
+        "default": [
+         "찬양 1",
+         "찬양 2",
+         "찬양 3",
+         "찬양 4",
+         "찬양 5"
+        ]
+       }
+      ],
+      "role": [
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "인도자 Mic",
+       "보컬 Mic #1-{vocals|4}",
+       "Full Band"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "곡별무빙",
+       "인도자 30%",
+       "무대 30%",
+       "악기 30%",
+       "하우스앞 0%",
+       "하우스뒤 5%"
+      ],
+      "inout": [
+       "중앙"
+      ],
+      "details": [
+       "-인도자 {leaders|1}, 보컬 {vocals|4}",
+       "-인도자 모니터 화면 전환 1초후 멘트",
+       "-인도자 첫 멘트시 Name자막 표시",
+       "-가사자막(작사, 작곡자 표기)"
+      ]
+     }
+    },
+    {
+     "key": "special",
+     "name": "특순",
+     "aliases": [],
+     "dur": 7,
+     "cells": {
+      "content": [
+       "▶특순",
+       {
+        "list": "특순곡",
+        "fmt": "- {item}",
+        "default": [
+         "특순곡"
+        ]
+       }
+      ],
+      "role": [
+       "특순팀"
+      ],
+      "mic": [
+       "성가대 Mic"
+      ],
+      "light": [
+       "무대 30%",
+       "LED 30%",
+       "하우스앞 0%",
+       "하우스뒤 5%"
+      ],
+      "details": [
+       "-특순팀 (기획행정) 등단",
+       "-특순 후 강대상 세팅"
+      ]
+     }
+    },
+    {
+     "key": "announce",
+     "name": "광고/ 설교자 소개",
+     "aliases": [],
+     "dur": 4,
+     "cells": {
+      "content": [
+       "▶광고/ 설교자 소개"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-예배환영 멘트후 클로즈업 Name자막 표시"
+      ]
+     }
+    },
+    {
+     "key": "bible",
+     "name": "성경 봉독",
+     "aliases": [],
+     "dur": 2,
+     "cells": {
+      "content": [
+       "▶성경 봉독",
+       {
+        "list": "본문",
+        "fmt": "- {item}",
+        "default": [
+         "성경구절"
+        ]
+       }
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "건반"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-건반 백업",
+       "-예배당 본문 자막 X, 방송 O",
+       "-회중 자리에 일어서서"
+      ]
+     }
+    },
+    {
+     "key": "sermon",
+     "name": "설교",
+     "aliases": [],
+     "dur": 30,
+     "cells": {
+      "content": [
+       "▶설교",
+       {
+        "list": "설교제목",
+        "fmt": "- {item}",
+        "default": [
+         "설교제목"
+        ]
+       }
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-설교 OUTLINE 적용",
+       "-마지막 슬라이드시 건반 대기",
+       "-마무리 기도시 밴드 등단 (상수)"
+      ]
+     },
+     "shade": "D9D9D9"
+    },
+    {
+     "key": "postprayer",
+     "name": "설교 후 기도",
+     "aliases": [],
+     "dur": 15,
+     "cells": {
+      "content": [
+       "▶설교 후 기도"
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "light": [
+       "인도자 60%",
+       "무대 60%",
+       "하우스앞,뒤 10%"
+      ]
+     }
+    },
+    {
+     "key": "postpraise",
+     "name": "설교 후 찬양",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶설교 후 찬양",
+       {
+        "list": "설교후찬양",
+        "fmt": "- {item}",
+        "default": [
+         "찬양곡"
+        ]
+       }
+      ],
+      "role": [
+       "설교자",
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "인도자 Mic",
+       "보컬 Mic #1-{vocals|4}",
+       "Full Band"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 60%",
+       "무대 60%",
+       "하우스앞,뒤 10%"
+      ],
+      "details": [
+       "-찬양팀 백업"
+      ]
+     }
+    },
+    {
+     "key": "guide",
+     "name": "안내",
+     "aliases": [],
+     "dur": 2,
+     "cells": {
+      "content": [
+       "▶안내"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "light": [
+       "무대 60%",
+       "하우스앞,뒤 20%"
+      ]
+     }
+    },
+    {
+     "key": "laying",
+     "name": "안수기도",
+     "aliases": [],
+     "dur": 30,
+     "cells": {
+      "content": [
+       "▶안수기도"
+      ],
+      "role": [
+       "목회자"
+      ],
+      "mic": [
+       "N/A"
+      ],
+      "light": [
+       "무대 20%",
+       "LED 20%",
+       "하우스앞,뒤 20%"
+      ],
+      "details": [
+       "-기도 스테이션별 의자, 물 각 3개 세팅"
+      ]
+     }
+    }
+   ],
+   "specials": []
+  },
+  "baptism": {
+   "id": "baptism",
+   "label": "세례식",
+   "title": "세례식 Cue-Sheet",
+   "start": "13:40",
+   "template": "service2.docx",
+   "fileName": "{yyyy} {mmdd} 세례식 큐시트",
+   "guidelineTable": 14,
+   "source": {
+    "kind": "supplement",
+    "ref": "표 14 (세례식)",
+    "note": "출연(헤더) 항목은 가이드라인 표에 없음 — 각 행의 담당 기준으로 구성"
+   },
+   "defaults": {
+    "vocals": 4,
+    "leaders": 1
+   },
+   "cast": [
+    [
+     "인도",
+     "인도"
+    ],
+    [
+     "대표기도",
+     "대표기도"
+    ],
+    [
+     "설교",
+     "설교"
+    ],
+    [
+     "간증",
+     "간증",
+     true
+    ]
+   ],
+   "roleMics": {
+    "설교자": "헤드셋 Mic",
+    "인도자": "Leader Mic",
+    "대표기도자": "기도자 Mic",
+    "간증자": "간증자 Mic"
+   },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "details"
+   ],
+   "rehearsal": {
+    "dur": 40,
+    "cells": {
+     "content": [
+      "▶셋업 및 리허설",
+      "- 무대 셋업 (악기, 강대상)",
+      "- 찬양팀 리허설",
+      "- 자막/음향/조명 리허설"
+     ],
+     "role": [
+      "전체"
+     ],
+     "mic": [
+      "음향체크"
+     ],
+     "screen": [
+      "자막 영상 체크"
+     ],
+     "lightA": [
+      "리허설 중",
+      "예배 100%",
+      "하우스 앞,뒤 65%"
+     ],
+     "lightB": [
+      "리허설 후",
+      "Pre 100%",
+      "하우스 앞, 뒤 65%"
+     ],
+     "details": [
+      "-강대상세팅",
+      "-설교자, 사회자, 찬양인도자 물",
+      "-무선마이크 배터리 잔량 확인",
+      "-타이머 확인(찬양, 설교)",
+      "-무대 조명 세팅",
+      "-리허설 후 BGM"
+     ]
+    }
+   },
+   "rows": [
+    {
+     "key": "standby",
+     "name": "STAND-BY",
+     "aliases": [],
+     "dur": 20,
+     "cells": {
+      "content": [
+       "▶STAND-BY"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "BGM"
+      ],
+      "screen": [
+       "STAND-BY 자막"
+      ],
+      "light": [
+       "무대 0%",
+       "하우스 앞,뒤 70%"
+      ]
+     }
+    },
+    {
+     "key": "praise",
+     "name": "찬양",
+     "aliases": [],
+     "dur": 10,
+     "cells": {
+      "content": [
+       "▶찬양",
+       {
+        "list": "찬양",
+        "fmt": "{n}. {item}",
+        "default": [
+         "예수를 나의 구주 삼고 C",
+         "내 평생 사는 동안 C - D",
+         "주님의 선하심 A (한,영)"
+        ]
+       }
+      ],
+      "role": [
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "Leader Mic",
+       "건반, 기타"
+      ],
+      "screen": [
+       "가사자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "악기 65%",
+       "하우스 앞, 뒤 70%"
+      ]
+     }
+    },
+    {
+     "key": "prayer",
+     "name": "대표 기도 (한영)",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶대표 기도 (한영)"
+      ],
+      "role": [
+       "대표기도자"
+      ],
+      "mic": [
+       "기도자 Mic"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-강대상 세팅",
+       "-기도자 등단 (하수); 한/영"
+      ]
+     }
+    },
+    {
+     "key": "video",
+     "name": "예수님 세례 영상",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶예수님 세례 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "인도자 0%",
+       "무대 0%",
+       "하우스 앞, 뒤 20%"
+      ],
+      "details": [
+       "-영상후 설교자 등단",
+       "-강대상 세팅"
+      ]
+     },
+     "video": "예수님 세례 영상"
+    },
+    {
+     "key": "bible",
+     "name": "성경 봉독",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶성경 봉독",
+       {
+        "list": "본문",
+        "fmt": "- {item}",
+        "default": [
+         "마태복음 3:13-17"
+        ]
+       }
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "screen": [
+       "본문자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ]
+     }
+    },
+    {
+     "key": "sermon",
+     "name": "설교",
+     "aliases": [],
+     "dur": 15,
+     "cells": {
+      "content": [
+       "▶설교"
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "screen": [
+       "설교자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ]
+     }
+    },
+    {
+     "key": "testimony",
+     "name": "간증",
+     "aliases": [],
+     "dur": 10,
+     "cells": {
+      "content": [
+       "▶간증"
+      ],
+      "role": [
+       "간증자"
+      ],
+      "mic": [
+       "간증자 Mic",
+       "건반"
+      ],
+      "screen": [
+       "소개자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-건반 백업",
+       "-간증자 2인",
+       "(성인: 간증자 1, 입교: 간증자 2)"
+      ]
+     }
+    },
+    {
+     "key": "baptism",
+     "name": "세례식",
+     "aliases": [],
+     "dur": 20,
+     "cells": {
+      "content": [
+       "▶세례식"
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "건반"
+      ],
+      "screen": [
+       "소개자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-세례자 등단",
+       "- XX 명: 성인 X (KM X, EM X), 어린이 X, 입교 X (KM X, PW X), 유아 XX (KM XX, EM X)",
+       "-성인세례->어린이->입교->유아세례"
+      ]
+     }
+    },
+    {
+     "key": "blessing",
+     "name": "축복송",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶축복송",
+       {
+        "list": "축복송",
+        "fmt": "- {item}",
+        "default": [
+         "너는 택한 족속이요"
+        ]
+       }
+      ],
+      "role": [
+       "설교자",
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "Leader Mic",
+       "건반, 기타"
+      ],
+      "screen": [
+       "가사자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-기념사진 촬영"
+      ]
+     }
+    },
+    {
+     "key": "announce",
+     "name": "광고",
+     "aliases": [],
+     "dur": 2,
+     "cells": {
+      "content": [
+       "▶광고"
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "screen": [
+       "광고자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-세례 대상자 하단"
+      ]
+     }
+    },
+    {
+     "key": "benediction",
+     "name": "축도",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶축도"
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ]
+     }
+    }
+   ],
+   "specials": []
+  },
+  "christmas": {
+   "id": "christmas",
+   "label": "Christmas Wonder",
+   "title": "Christmas Wonder Cue-Sheet",
+   "start": "19:00",
+   "template": "service2.docx",
+   "fileName": "{yyyy} {mmdd} Christmas Wonder 큐시트",
+   "guidelineTable": 15,
+   "source": {
+    "kind": "supplement",
+    "ref": "표 15 (Christmas Wonder)",
+    "note": "출연(헤더) 항목은 가이드라인 표에 없음 — 각 행의 담당 기준으로 구성"
+   },
+   "defaults": {
+    "vocals": 4,
+    "leaders": 1
+   },
+   "cast": [
+    [
+     "인도",
+     "인도"
+    ],
+    [
+     "사회",
+     "사회"
+    ],
+    [
+     "설교",
+     "설교"
+    ]
+   ],
+   "roleMics": {
+    "설교자": "헤드셋 Mic",
+    "인도자": "인도자 Mic",
+    "사회자": "사회자 Mic"
+   },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "inout",
+    "stage",
+    "details"
+   ],
+   "rehearsal": {
+    "dur": 150,
+    "cells": {
+     "content": [
+      "▶리허설",
+      "- 자막/영상/음향 ({t-150}-{t-5})",
+      "- 파워웨이브 NC/United ({t-150}-{t-135})",
+      "- 꿈땅 NC/ United ({t-135}-{t-120})",
+      "- 꿈땅 Jr. ({t-120}-{t-105})",
+      "- 꿈땅 Sr. ({t-105}-{t-90})",
+      "- 파워웨이브 Sr./United ({t-90}-{t-75})",
+      "- 예꿈 United ({t-75}-{t-60})"
+     ],
+     "role": [
+      "다함께"
+     ],
+     "mic": [
+      "헤드셋 Mic",
+      "인도자 Mic",
+      "사회자 Mic",
+      "성가대 Mic",
+      "보컬 Mic #1-{vocals|4}",
+      "Full Band"
+     ],
+     "screen": [],
+     "lightA": [
+      "무빙 리허설",
+      "인도자 65%",
+      "무대 65%",
+      "악기 30%",
+      "하우스앞뒤 40%"
+     ],
+     "lightB": [
+      "Pre 100%",
+      "하우스앞뒤 20%"
+     ],
+     "inout": [],
+     "stage": [],
+     "details": [
+      "-강대상위치(큐시트,물,주보,티슈,생명의삶)",
+      "-설교자, 찬양인도자, 사회자 물",
+      "-무선마이크 배터리 잔량 확인",
+      "-타이머 확인(찬양, 설교)",
+      "-무대 조명 세팅"
+     ]
+    }
+   },
+   "rows": [
+    {
+     "key": "intro",
+     "name": "Christmas 인트로 영상",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶Christmas 인트로 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "인도자, 무대 0%",
+       "하우스 앞뒤 0%"
+      ]
+     },
+     "video": "Christmas 인트로 영상"
+    },
+    {
+     "key": "praise",
+     "name": "찬양",
+     "aliases": [],
+     "dur": 12,
+     "cells": {
+      "content": [
+       "▶찬양",
+       {
+        "list": "찬양",
+        "fmt": "{n}. {item}",
+        "default": [
+         "Joy to the World (Unspeakable Joy)",
+         "Hark the Herald Angels Sing (SLOW)",
+         "나는 예배자입니다"
+        ]
+       }
+      ],
+      "role": [
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "인도자 Mic",
+       "보컬 Mic #1-{vocals|4}",
+       "Full Band"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "찬양 50%",
+       "하우스앞뒤 20%"
+      ],
+      "inout": [
+       "중앙"
+      ],
+      "details": [
+       "-인도자 {leaders|1}, 보컬 {vocals|4}",
+       "-인도자 모니터 화면 전환 1초후 멘트",
+       "-인도자 첫 멘트시 Name자막 표시",
+       "-가사자막(작사, 작곡자 표기)"
+      ]
+     }
+    },
+    {
+     "key": "video1",
+     "name": "영상: 설교자 등장 영상",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶영상: 설교자 등장 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "인도자, 무대 0%",
+       "하우스 앞뒤 0%"
+      ],
+      "details": [
+       "-영상말미 보면대 세팅"
+      ]
+     },
+     "video": "영상: 설교자 등장 영상"
+    },
+    {
+     "key": "bible",
+     "name": "성경 봉독",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶성경 봉독",
+       {
+        "list": "본문",
+        "fmt": "- {item}",
+        "default": [
+         "요한복음 3:16"
+        ]
+       }
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "건반"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-예배당 본문 자막 X, 방송 O",
+       "-회중 자리에 일어서서"
+      ]
+     }
+    },
+    {
+     "key": "sermon",
+     "name": "설교",
+     "aliases": [],
+     "dur": 10,
+     "cells": {
+      "content": [
+       "▶설교",
+       {
+        "list": "설교제목",
+        "fmt": "- {item}",
+        "default": [
+         "사랑"
+        ]
+       }
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-설교 OUTLINE 적용",
+       "-마지막 슬라이드시 건반 대기"
+      ]
+     },
+     "shade": "D9D9D9"
+    },
+    {
+     "key": "video2",
+     "name": "소개영상",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶소개영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "인도자, 무대 0%",
+       "하우스 앞뒤 0%"
+      ],
+      "details": [
+       "-보면대 하단"
+      ]
+     },
+     "video": "소개영상"
+    },
+    {
+     "key": "host1",
+     "name": "사회/순서소개",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶사회/순서소개"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-오프닝 멘트, 사회자 소개, 행사브리핑, 다음 순서 소개"
+      ]
+     }
+    },
+    {
+     "key": "yekkum",
+     "name": "예꿈 United",
+     "aliases": [],
+     "dur": 20,
+     "cells": {
+      "content": [
+       "▶예꿈 United",
+       "- 예꿈 A : 연극, 말씀암송",
+       "- NC+UTD : 영상, 찬양",
+       "- 예꿈 B : 영상, 찬양"
+      ],
+      "role": [
+       "예꿈 담당자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "AR"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "무빙조명",
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-AR 음원파일로 진행되는 율동",
+       "-말씀암송챈트 : 누가복음 2장 10절",
+       "-AR: 난 깜짝 놀랐지 / 기쁘다 구주 오셨네",
+       "-인원: 80 (예꿈A: 14, NC+UTD: 22, 예꿈 B: 44)"
+      ]
+     }
+    },
+    {
+     "key": "host2",
+     "name": "사회/순서소개",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶사회/순서소개"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-이전 순서 칭찬, 다음 순서 소개"
+      ]
+     }
+    },
+    {
+     "key": "powerwave",
+     "name": "파워웨이브 NC/United",
+     "aliases": [],
+     "dur": 20,
+     "cells": {
+      "content": [
+       "▶파워웨이브 NC/United",
+       "- Shadow Act - FL PW Jr. (8’)",
+       "- 합창 - FL PW Jr. / NC PW"
+      ],
+      "role": [
+       "파워웨이브 담당자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "성가대 Mic",
+       "싱어 Mic x4",
+       "AR"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "무빙조명",
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-AR 음원파일로 진행되는 율동",
+       "-AR: Holy Forever (Christmas Version)",
+       "-인원: 66명",
+       "-Shadow Act시 암전"
+      ]
+     }
+    },
+    {
+     "key": "host3",
+     "name": "사회/순서소개",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶사회/순서소개"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-이전 순서 칭찬, 다음 순서 소개"
+      ]
+     }
+    },
+    {
+     "key": "video3",
+     "name": "영상: 예꿈, 꿈땅, 파워웨이브 영상",
+     "aliases": [],
+     "dur": 4,
+     "cells": {
+      "content": [
+       "▶영상: 예꿈, 꿈땅, 파워웨이브 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "인도자, 무대 0%",
+       "하우스 앞뒤 0%"
+      ]
+     },
+     "video": "영상: 예꿈, 꿈땅, 파워웨이브 영상"
+    },
+    {
+     "key": "kkumttang",
+     "name": "꿈땅 NC/United",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶꿈땅 NC/United",
+       "- What Christmas is About"
+      ],
+      "role": [
+       "꿈땅 담당자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "AR"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "무빙조명",
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-AR 음원파일로 진행되는 율동",
+       "-AR 재생",
+       "-인원: 13"
+      ]
+     }
+    },
+    {
+     "key": "host4",
+     "name": "사회/순서소개",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶사회/순서소개"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-이전 순서 칭찬, 다음 순서 소개"
+      ]
+     }
+    },
+    {
+     "key": "video4",
+     "name": "영상: 꿈땅 Jr. 영상",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶영상: 꿈땅 Jr. 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "인도자, 무대 0%",
+       "하우스 앞뒤 0%"
+      ]
+     },
+     "video": "영상: 꿈땅 Jr. 영상"
+    },
+    {
+     "key": "kkumttangjr",
+     "name": "꿈땅 Jr.",
+     "aliases": [],
+     "dur": 8,
+     "cells": {
+      "content": [
+       "▶꿈땅 Jr.",
+       "- 아들을 낳으리니, 아기 예수 오셨다."
+      ],
+      "role": [
+       "꿈땅 Jr. 담당자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "AR"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-AR 음원파일로 진행되는 율동",
+       "-인원: 90",
+       "-진행 중 영상통한 순서전환"
+      ]
+     }
+    },
+    {
+     "key": "host5",
+     "name": "사회/순서소개",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶사회/순서소개"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-이전 순서 칭찬, 다음 순서 소개"
+      ]
+     }
+    },
+    {
+     "key": "kkumttangsr",
+     "name": "꿈땅 Sr.",
+     "aliases": [],
+     "dur": 8,
+     "cells": {
+      "content": [
+       "▶꿈땅 Sr.",
+       "- Puppet Skit + 찬양"
+      ],
+      "role": [
+       "꿈땅 Sr. 담당자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "AR"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "무빙조명",
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-인원: 105"
+      ]
+     }
+    },
+    {
+     "key": "host6",
+     "name": "사회/순서소개",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶사회/순서소개"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-이전 순서 칭찬, 다음 순서 소개"
+      ]
+     }
+    },
+    {
+     "key": "powerwavesr",
+     "name": "파워웨이브 Sr./United",
+     "aliases": [],
+     "dur": 8,
+     "cells": {
+      "content": [
+       "▶파워웨이브 Sr./United",
+       "- 영상 + Dance Performance"
+      ],
+      "role": [
+       "파워웨이브 Sr. 담당자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "AR"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "무빙조명",
+       "인도자 0%",
+       "무대 0%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-AR 음원파일로 진행되는 율동",
+       "-AR 재생",
+       "-인원: 8"
+      ]
+     }
+    },
+    {
+     "key": "hostannounce",
+     "name": "사회/광고",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶사회/광고"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ]
+     }
+    },
+    {
+     "key": "closing",
+     "name": "마무리 찬양",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶마무리 찬양",
+       {
+        "list": "마무리찬양",
+        "fmt": "- {item}",
+        "default": [
+         "고요한밤 거룩한밤 (한영)"
+        ]
+       }
+      ],
+      "role": [
+       "설교자",
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "인도자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 40%",
+       "무대 50%",
+       "하우스앞뒤 20%"
+      ]
+     }
+    },
+    {
+     "key": "benediction",
+     "name": "마무리 및 축도",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶마무리 및 축도"
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "찬양 60%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-마무리 멘트 후 축도"
+      ]
+     }
+    }
+   ],
+   "specials": []
+  },
+  "yearend": {
+   "id": "yearend",
+   "label": "송구영신예배",
+   "title": "송구영신예배 Cue-Sheet",
+   "start": "20:45",
+   "template": "service2.docx",
+   "fileName": "{yyyy} {mmdd} 송구영신예배 큐시트",
+   "guidelineTable": 16,
+   "source": {
+    "kind": "supplement",
+    "ref": "표 16 (송구영신예배)",
+    "note": "출연(헤더) 항목은 가이드라인 표에 없음 — 각 행의 담당 기준으로 구성"
+   },
+   "defaults": {
+    "vocals": 4,
+    "leaders": 1
+   },
+   "cast": [
+    [
+     "인도",
+     "인도"
+    ],
+    [
+     "대표기도",
+     "대표기도"
+    ],
+    [
+     "봉독",
+     "봉독"
+    ],
+    [
+     "설교",
+     "설교"
+    ],
+    [
+     "통역",
+     "통역"
+    ],
+    [
+     "특순",
+     "특순",
+     true
+    ]
+   ],
+   "roleMics": {
+    "설교자": "헤드셋 Mic",
+    "인도자": "Leader Mic",
+    "대표기도자": "기도자 Mic",
+    "봉독자": "봉독자 Mic",
+    "통역자": "통역자 Mic",
+    "특순자": "특순자 Mic"
+   },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "details"
+   ],
+   "rehearsal": {
+    "dur": 45,
+    "cells": {
+     "content": [
+      "▶셋업 및 리허설",
+      "- 무대 셋업 (악기, 강대상)",
+      "- 찬양팀 리허설",
+      "- 자막/음향/조명 리허설"
+     ],
+     "role": [
+      "전체"
+     ],
+     "mic": [
+      "음향체크"
+     ],
+     "screen": [
+      "자막 영상 체크"
+     ],
+     "lightA": [
+      "리허설 중",
+      "예배 100%",
+      "하우스 앞,뒤 65%"
+     ],
+     "lightB": [
+      "리허설 후",
+      "Pre 100%",
+      "하우스 앞, 뒤 65%"
+     ],
+     "details": [
+      "-강대상세팅",
+      "-설교자, 사회자, 찬양인도자 물",
+      "-무선마이크 배터리 잔량 확인",
+      "-타이머 확인(찬양, 설교)",
+      "-무대 조명 세팅",
+      "-리허설 후 BGM"
+     ]
+    }
+   },
+   "rows": [
+    {
+     "key": "standby",
+     "name": "STAND-BY",
+     "aliases": [],
+     "dur": 15,
+     "cells": {
+      "content": [
+       "▶STAND-BY"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "BGM"
+      ],
+      "screen": [
+       "STAND-BY 자막"
+      ],
+      "light": [
+       "무대 0%",
+       "하우스 앞,뒤 70%"
+      ]
+     }
+    },
+    {
+     "key": "intro",
+     "name": "INTRO 영상",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶INTRO 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "무대 0%",
+       "하우스 앞,뒤 5%"
+      ]
+     },
+     "video": "INTRO 영상"
+    },
+    {
+     "key": "praise",
+     "name": "찬양",
+     "aliases": [],
+     "dur": 15,
+     "cells": {
+      "content": [
+       "▶찬양",
+       {
+        "list": "찬양",
+        "fmt": "{n}. {item}",
+        "default": [
+         "찬양 1",
+         "찬양 2",
+         "찬양 3"
+        ]
+       }
+      ],
+      "role": [
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "Leader Mic",
+       "싱어 Mic 1-4",
+       "밴드"
+      ],
+      "screen": [
+       "가사자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "악기 65%",
+       "하우스 앞, 뒤 20%"
+      ],
+      "details": [
+       "-타이머 {dur}분 세팅"
+      ]
+     }
+    },
+    {
+     "key": "prayer",
+     "name": "대표기도",
+     "aliases": [],
+     "dur": 5,
+     "cells": {
+      "content": [
+       "▶대표기도"
+      ],
+      "role": [
+       "대표기도자"
+      ],
+      "mic": [
+       "기도자 Mic"
+      ],
+      "screen": [
+       "소개자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-기도자 등단 (하수)",
+       "-강대상 세팅",
+       "-한영 대표기도",
+       "-대표기도후 강대상 하단"
+      ]
+     }
+    },
+    {
+     "key": "thanksvideo",
+     "name": "한해 감사 영상",
+     "aliases": [],
+     "dur": 3,
+     "cells": {
+      "content": [
+       "▶한해 감사 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "인도자 0%",
+       "무대 0%",
+       "하우스 앞, 뒤 5%"
+      ]
+     },
+     "video": "한해 감사 영상"
+    },
+    {
+     "key": "special",
+     "name": "특순",
+     "aliases": [],
+     "dur": 5,
+     "cells": {
+      "content": [
+       "▶특순",
+       {
+        "list": "특순곡",
+        "fmt": "- {item}",
+        "default": [
+         "특순곡"
+        ]
+       }
+      ],
+      "role": [
+       "특순자"
+      ],
+      "mic": [
+       "특순자 Mic",
+       "피아노 Mic"
+      ],
+      "screen": [
+       "소개,곡명",
+       "가사자막"
+      ],
+      "light": [
+       "인도자 0%",
+       "무대 0%",
+       "왼쪽특순 40%",
+       "하우스 앞, 뒤 70%"
+      ]
+     }
+    },
+    {
+     "key": "nextgen",
+     "name": "차세대 영상 설교",
+     "aliases": [],
+     "dur": 5,
+     "cells": {
+      "content": [
+       "▶차세대 영상 설교"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "인도자 0%",
+       "무대 0%",
+       "하우스 앞, 뒤 5%"
+      ],
+      "details": [
+       "-영상후 교역자 등단"
+      ]
+     },
+     "video": "차세대 영상 설교"
+    },
+    {
+     "key": "staffspecial",
+     "name": "교역자 특순",
+     "aliases": [],
+     "dur": 4,
+     "cells": {
+      "content": [
+       "▶교역자 특순",
+       {
+        "list": "교역자특순곡",
+        "fmt": "- {item}",
+        "default": [
+         "특순곡"
+        ]
+       }
+      ],
+      "role": [
+       "교역자"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "통역자 Mic",
+       "사회자 Mic"
+      ],
+      "screen": [
+       "소개,곡명",
+       "가사자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-특순 후 강대상 세팅"
+      ]
+     }
+    },
+    {
+     "key": "bible",
+     "name": "본문봉독",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶본문봉독",
+       {
+        "list": "본문",
+        "fmt": "- {item}",
+        "default": [
+         "성경구절"
+        ]
+       }
+      ],
+      "role": [
+       "봉독자"
+      ],
+      "mic": [
+       "봉독자 Mic"
+      ],
+      "screen": [
+       "본문자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-나래이션"
+      ]
+     }
+    },
+    {
+     "key": "sermon",
+     "name": "설교",
+     "aliases": [],
+     "dur": 20,
+     "cells": {
+      "content": [
+       "▶설교",
+       {
+        "list": "설교제목",
+        "fmt": "- {item}",
+        "default": [
+         "설교제목"
+        ]
+       }
+      ],
+      "role": [
+       "설교자",
+       "통역자"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "통역자 Mic"
+      ],
+      "screen": [
+       "설교자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-설교자 등단 (하수)",
+       "-타이머 {dur}분 세팅",
+       "-설교후 세리머니"
+      ]
+     },
+     "shade": "D9D9D9"
+    },
+    {
+     "key": "offering",
+     "name": "봉헌 찬양",
+     "aliases": [],
+     "dur": 4,
+     "cells": {
+      "content": [
+       "▶봉헌 찬양",
+       {
+        "list": "봉헌찬양",
+        "fmt": "- {item}",
+        "default": [
+         "찬양곡"
+        ]
+       }
+      ],
+      "role": [
+       "설교자",
+       "통역자"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "통역자 Mic"
+      ],
+      "screen": [
+       "가사자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 20%"
+      ],
+      "details": [
+       "-찬양팀 등단",
+       "-봉헌위원: {봉헌위원|봉헌위원 1, 2}"
+      ]
+     }
+    },
+    {
+     "key": "offerprayer",
+     "name": "봉헌기도",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶봉헌기도"
+      ],
+      "role": [
+       "설교자",
+       "통역자",
+       "찬양팀"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "통역자 Mic",
+       "찬양팀 Mic",
+       "밴드"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 20%"
+      ],
+      "details": [
+       "-찬양팀 하단",
+       "-건반 백업"
+      ]
+     }
+    },
+    {
+     "key": "benediction",
+     "name": "축도",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶축도"
+      ],
+      "role": [
+       "설교자",
+       "통역자"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "통역자 Mic",
+       "건반"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ],
+      "details": [
+       "-축도후 설교자, 통역자 하단"
+      ]
+     }
+    },
+    {
+     "key": "ending",
+     "name": "Ending Song",
+     "aliases": [],
+     "dur": 5,
+     "cells": {
+      "content": [
+       "▶Ending Song",
+       "- God bless America",
+       "애국가"
+      ],
+      "role": [
+       "설교자",
+       "통역자",
+       "교역자"
+      ],
+      "mic": [
+       "헤드셋 Mic",
+       "통역자 Mic",
+       "Leader Mic",
+       "싱어 Mic 1-4",
+       "밴드"
+      ],
+      "screen": [
+       "가사자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스 앞, 뒤 70%"
+      ]
+     }
+    }
+   ],
+   "specials": []
+  },
+  "bridge": {
+   "id": "bridge",
+   "label": "The Bridge 집회",
+   "title": "The Bridge 집회 Cue-Sheet",
+   "start": "19:30",
+   "template": "service2.docx",
+   "fileName": "{yyyy} {mmdd} The Bridge 집회 큐시트",
+   "guidelineTable": 17,
+   "source": {
+    "kind": "supplement",
+    "ref": "표 17 (The Bridge 집회)",
+    "note": "출연(헤더) 항목은 가이드라인 표에 없음 — 각 행의 담당 기준으로 구성"
+   },
+   "defaults": {
+    "vocals": 4,
+    "leaders": 1
+   },
+   "cast": [
+    [
+     "인도",
+     "인도"
+    ],
+    [
+     "사회",
+     "사회"
+    ],
+    [
+     "설교",
+     "설교"
+    ]
+   ],
+   "roleMics": {
+    "설교자": "헤드셋 Mic",
+    "인도자": "인도자 Mic",
+    "사회자": "사회자 Mic"
+   },
+   "cols": [
+    "content",
+    "role",
+    "mic",
+    "screen",
+    "light",
+    "inout",
+    "stage",
+    "details"
+   ],
+   "rehearsal": {
+    "dur": 60,
+    "cells": {
+     "content": [
+      "▶리허설",
+      "- 악기, 무대 세팅 ({t-60})",
+      "- 찬양팀 ({t-45}-{t-20})",
+      "- 자막/영상/음향 ({t-60}-{t-10})",
+      "- 교회소식 슬라이드/BGM"
+     ],
+     "role": [
+      "다함께"
+     ],
+     "mic": [
+      "헤드셋 Mic",
+      "인도자 Mic",
+      "사회자 Mic",
+      "보컬 Mic #1-{vocals|4}",
+      "Full Band"
+     ],
+     "screen": [],
+     "lightA": [
+      "무빙 리허설",
+      "인도자 65%",
+      "무대 65%",
+      "악기 30%",
+      "하우스앞뒤 40%"
+     ],
+     "lightB": [
+      "Pre 100%",
+      "하우스앞 20%",
+      "하우스뒤 0%"
+     ],
+     "inout": [],
+     "stage": [],
+     "details": [
+      "-강대상위치(큐시트,물,티슈)",
+      "-설교자, 찬양인도자, 사회자 물",
+      "-무선마이크 배터리 잔량 확인",
+      "-타이머 확인(찬양, 설교)",
+      "-무대 조명 세팅"
+     ]
+    }
+   },
+   "rows": [
+    {
+     "key": "intro",
+     "name": "인트로 영상",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶인트로 영상"
+      ],
+      "role": [
+       "PD Station"
+      ],
+      "mic": [
+       "영상"
+      ],
+      "screen": [
+       "영상"
+      ],
+      "light": [
+       "Pre 0%",
+       "하우스 앞뒤 0%"
+      ]
+     },
+     "video": "인트로 영상"
+    },
+    {
+     "key": "praise",
+     "name": "찬양",
+     "aliases": [],
+     "dur": 35,
+     "cells": {
+      "content": [
+       "▶찬양",
+       {
+        "list": "찬양",
+        "fmt": "{n}. {item}",
+        "default": [
+         "찬양 1",
+         "찬양 2",
+         "찬양 3",
+         "찬양 4",
+         "찬양 5"
+        ]
+       }
+      ],
+      "role": [
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "인도자 Mic",
+       "보컬 Mic #1-{vocals|4}",
+       "Full Band"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "곡별무빙",
+       "인도자 30%",
+       "무대 30%",
+       "악기 30%",
+       "하우스앞뒤 0%",
+       "*찬양중간 하우스뒤 5%"
+      ],
+      "inout": [
+       "중앙"
+      ],
+      "details": [
+       "-인도자 {leaders|1}, 보컬 {vocals|4}",
+       "-인도자 모니터 화면 전환 1초후 멘트",
+       "-인도자 첫 멘트시 Name자막 표시",
+       "-가사자막(작사, 작곡자 표기)",
+       "-찬양말미 강대상등단"
+      ]
+     }
+    },
+    {
+     "key": "blessing",
+     "name": "축복",
+     "aliases": [],
+     "dur": 5,
+     "cells": {
+      "content": [
+       "▶축복"
+      ],
+      "role": [
+       "사회자",
+       "인도자",
+       "찬양팀"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "인도자 Mic",
+       "보컬 Mic #1-{vocals|4}",
+       "Full Band"
+      ],
+      "light": [
+       "인도자 65%",
+       "찬양 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-찬양팀 하단 (하수)"
+      ]
+     }
+    },
+    {
+     "key": "bible",
+     "name": "성경 봉독",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶성경 봉독",
+       {
+        "list": "본문",
+        "fmt": "- {item}",
+        "default": [
+         "성경구절"
+        ]
+       }
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "건반"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-건반 백업",
+       "-예배당 본문 자막 O, 방송 O (찬양집회로 성경 지참이 필수가 아니므로 본문을 화면에 표시)"
+      ]
+     }
+    },
+    {
+     "key": "speaker",
+     "name": "강사소개",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶강사소개"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-소개 자막",
+       "-소개 후 설교자 등단"
+      ]
+     }
+    },
+    {
+     "key": "sermon",
+     "name": "설교",
+     "aliases": [],
+     "dur": 45,
+     "cells": {
+      "content": [
+       "▶설교",
+       {
+        "list": "설교제목",
+        "fmt": "- {item}",
+        "default": [
+         "설교제목"
+        ]
+       }
+      ],
+      "role": [
+       "설교자"
+      ],
+      "mic": [
+       "헤드셋 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ],
+      "details": [
+       "-설교 OUTLINE 적용",
+       "-마지막 슬라이드시 건반 대기"
+      ]
+     },
+     "shade": "D9D9D9"
+    },
+    {
+     "key": "postpraise",
+     "name": "설교 후 찬양",
+     "aliases": [],
+     "dur": 5,
+     "cells": {
+      "content": [
+       "▶설교 후 찬양"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic",
+       "인도자 Mic",
+       "보컬 Mic #1-{vocals|4}",
+       "Full Band"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 20%"
+      ],
+      "details": [
+       "-찬양팀 회중석 백업"
+      ]
+     }
+    },
+    {
+     "key": "prayer",
+     "name": "기도",
+     "aliases": [],
+     "dur": 10,
+     "cells": {
+      "content": [
+       "▶기도"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 5%"
+      ]
+     }
+    },
+    {
+     "key": "closing",
+     "name": "마무리",
+     "aliases": [],
+     "dur": 1,
+     "cells": {
+      "content": [
+       "▶마무리"
+      ],
+      "role": [
+       "사회자"
+      ],
+      "mic": [
+       "사회자 Mic"
+      ],
+      "screen": [
+       "하단자막"
+      ],
+      "light": [
+       "인도자 65%",
+       "무대 65%",
+       "하우스앞뒤 70%"
+      ]
+     }
+    }
+   ],
+   "specials": []
   }
- }
+ },
+ "occasions": [
+  {
+   "id": "sunday",
+   "label": "주일 예배",
+   "services": [
+    "1",
+    "2",
+    "4"
+   ],
+   "weekday": 0
+  },
+  {
+   "id": "wed",
+   "label": "수요성령집회",
+   "services": [
+    "wed"
+   ],
+   "weekday": 3,
+   "note": "수요성령집회는 매주 수요일 7시반에 시작되는 예배입니다."
+  },
+  {
+   "id": "newyear",
+   "label": "신년집회",
+   "services": [
+    "newyear"
+   ],
+   "weekday": null,
+   "note": "예배 외 행사 구성은 예배 본부 담당 목회자와 본부장, 그리고 행사 주체가 되는 본부와 소통하여 확정 및 cue sheet 작성을 해야합니다."
+  },
+  {
+   "id": "baptism",
+   "label": "세례식",
+   "services": [
+    "baptism"
+   ],
+   "weekday": null,
+   "note": "예배 외 행사 구성은 예배 본부 담당 목회자와 본부장, 그리고 행사 주체가 되는 본부와 소통하여 확정 및 cue sheet 작성을 해야합니다."
+  },
+  {
+   "id": "christmas",
+   "label": "Christmas Wonder",
+   "services": [
+    "christmas"
+   ],
+   "weekday": null,
+   "note": "예배 외 행사 구성은 예배 본부 담당 목회자와 본부장, 그리고 행사 주체가 되는 본부와 소통하여 확정 및 cue sheet 작성을 해야합니다."
+  },
+  {
+   "id": "yearend",
+   "label": "송구영신예배",
+   "services": [
+    "yearend"
+   ],
+   "weekday": null,
+   "note": "예배 외 행사 구성은 예배 본부 담당 목회자와 본부장, 그리고 행사 주체가 되는 본부와 소통하여 확정 및 cue sheet 작성을 해야합니다."
+  },
+  {
+   "id": "bridge",
+   "label": "The Bridge 집회",
+   "services": [
+    "bridge"
+   ],
+   "weekday": null,
+   "note": "예배 외 행사 구성은 예배 본부 담당 목회자와 본부장, 그리고 행사 주체가 되는 본부와 소통하여 확정 및 cue sheet 작성을 해야합니다."
+  }
+ ]
 }

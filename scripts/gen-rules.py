@@ -9,6 +9,10 @@ RAW = 'src/rules/guideline-raw.json'
 items = json.load(open(RAW))
 tbl = {x['i']: x for x in items if x['k'] == 'tbl'}
 COLS = ['content','role','mic','screen','light','inout','stage','details']
+HDR = {'내용':'content','담당':'role','음향':'mic','화면':'screen','조명':'light','입-출':'inout','무대':'stage','세부사항':'details'}
+def colmap(rows):
+    """(cell index, column) pairs read from the header row; event tables drop 입-출/무대."""
+    return [(ci, HDR[' '.join(c['paras']).strip()]) for ci, c in enumerate(rows[0]) if ci > 0]
 def lines(c):
     ps = [p.strip() for p in c['paras']]
     while ps and not ps[0]: ps.pop(0)
@@ -30,12 +34,26 @@ ALIASES = {
 }
 VIDEO = {'intro':'INTRO 영상','reading':'공동체 성경읽기 영상'}
 def L(name, fmt, default): return {'list':name,'fmt':fmt,'default':default}
-def tokenize(sid, key, col, ls):
-    v = {'1':3,'2':4,'4':4}[sid]
+def tokenize(sid, key, col, ls, dur=None):
+    ev = sid not in ('1', '2', '4')
     out = []
     i = 0
     while i < len(ls):
         s = ls[i]
+        if ev and col == 'content' and i > 0:
+            # event tables show example songs / passages / titles: they become list defaults
+            if key == 'praise' and re.match(r'^\d+\. ', s) and not re.fullmatch(r'\d+\. 찬양 \d', s):
+                j = i; items_ = []
+                while j < len(ls) and re.match(r'^\d+\. ', ls[j]):
+                    items_.append(re.sub(r'^\d+\. ', '', ls[j])); j += 1
+                out.append(L('찬양', '{n}. {item}', items_)); i = j; continue
+            name = {'bible':'본문','sermon':'설교제목','blessing':'축복송','closing':'마무리찬양'}.get(key)
+            if name and s.startswith('- '):
+                out.append(L(name, '- {item}', [s[2:]])); i += 1; continue
+            if s == '- 특순곡':
+                out.append(L('특순곡' if key == 'special' else '교역자특순곡', '- {item}', ['특순곡'])); i += 1; continue
+        if ev and col == 'details' and dur and ('타이머' in s or '시간' in s):
+            s = re.sub(r'(\d+)분', lambda m: '{dur}분' if int(m.group(1)) == dur else m.group(0), s)
         # song lists
         if col == 'content' and re.fullmatch(r'(\d+\. )?찬양 \d', s):
             j = i
@@ -47,7 +65,7 @@ def tokenize(sid, key, col, ls):
         if col == 'content' and s == '- 성경구절': out.append(L('본문','- {item}',['성경구절'])); i += 1; continue
         if col == 'content' and s == '- 설교제목': out.append(L('설교제목','- {item}',['설교제목'])); i += 1; continue
         if col == 'content' and s == '- 찬양곡':
-            out.append(L('마무리찬양' if key=='closing' else '봉헌찬양','- {item}',['찬양곡'])); i += 1; continue
+            out.append(L({'closing':'마무리찬양','postpraise':'설교후찬양'}.get(key, '봉헌찬양'),'- {item}',['찬양곡'])); i += 1; continue
         if col == 'content' and key == 'benediction' and s.startswith('- '):
             out.append(L('축도찬양','- {item}',[s[2:]])); i += 1; continue
         s = s.replace('-봉헌위원: 봉헌위원 1, 2', '-봉헌위원: {봉헌위원|봉헌위원 1, 2}')
@@ -72,30 +90,83 @@ SVC = {
            cast=[['사회','사회'],['설교','설교'],['인도','인도']], roleMics={'사회자':'사회자 Mic','설교자':'설교자 Mic','인도자':'인도자 Mic'}),
 }
 out = {'guideline':'주일 예배 Cue Sheet Guideline v1.0','staffOrder':['PD','FD','음향','조명','자막','방송실','카메라'],'services':{}}
-for sid, sv in SVC.items():
+def build_service(sid, sv, keys):
     rows = tbl[sv['table']]['rows']
+    cm = colmap(rows)
     r1, r2 = rows[1], rows[2]
     reh = {'dur': int(re.search(r'\d+', r1[0]['paras'][1]).group()), 'cells': {}}
-    for ci, col in enumerate(COLS, start=1):
+    for ci, col in cm:
         if col == 'light':
             reh['cells']['lightA'] = lines(r1[ci]); reh['cells']['lightB'] = lines(r2[ci])
         else:
             reh['cells'][col] = [rel(sv['start'], x) for x in tokenize(sid, 'rehearsal', col, lines(r1[ci]))]
-    srows = []
-    for r in rows[3:]:
+    srows = []; above = None
+    for n, r in enumerate(rows[3:]):
         t = lines(r[0]); dur = int(re.search(r'\d+', t[1]).group())
-        cells = {col: tokenize(sid, None, col, lines(r[ci])) for ci, col in enumerate(COLS, start=1)}
-        title = cells['content'][0]
-        key = KEYS[sid][title]
-        cells = {col: tokenize(sid, key, col, lines(r[ci])) for ci, col in enumerate(COLS, start=1)}
-        row = {'key':key,'name':title.lstrip('▶').strip(),'aliases':ALIASES.get(key,[]),'dur':dur,'cells':{k:v for k,v in cells.items() if v}}
-        if key in VIDEO: row['video'] = VIDEO[key]
+        raw = {col: lines(r[ci]) for ci, col in cm}
+        for ci, col in cm:  # a vertically merged cell (표 15 성경 봉독/설교 조명) repeats the cell above
+            if r[ci].get('vm') == 'continue' and above: raw[col] = above[col]
+        above = raw
+        key = keys[n]
+        cells = {col: tokenize(sid, key, col, raw[col], dur) for _, col in cm}
+        row = {'key':key,'name':raw['content'][0].lstrip('▶').strip(),'aliases':sv.get('aliases', ALIASES).get(key,[]),'dur':dur,'cells':{k:v for k,v in cells.items() if v}}
+        video = sv.get('video', VIDEO).get(key)
+        if video: row['video'] = video
         if r[1].get('fill'): row['shade'] = r[1]['fill']  # the guideline shades the 설교 row
         srows.append(row)
-    out['services'][sid] = {'id':sid,'label':sv['label'],'title':sv['title'],'start':sv['start'],'template':sv['template'],'fileName':sv['fileName'],
-        'guidelineTable':sv['table'],'source':G('표 %d (%s 기본 진행)' % (sv['table'], sv['label'][:2])),
-        'defaults':{'vocals':{'1':3,'2':4,'4':4}[sid],'leaders':1},'cast':sv['cast'],'roleMics':sv['roleMics'],
-        'rehearsal':reh,'rows':srows,'specials':[]}
+    return {'id':sid,'label':sv['label'],'title':sv['title'],'start':sv['start'],'template':sv['template'],'fileName':sv['fileName'],
+        'guidelineTable':sv['table'],'source':sv.get('source') or G('표 %d (%s 기본 진행)' % (sv['table'], sv['label'][:2])),
+        'defaults':{'vocals':{'1':3}.get(sid, 4),'leaders':1},'cast':sv['cast'],'roleMics':sv['roleMics'],
+        'cols':[c for _, c in cm],'rehearsal':reh,'rows':srows,'specials':[]}
+for sid, sv in SVC.items():
+    rows = tbl[sv['table']]['rows']
+    assert [c for _, c in colmap(rows)] == COLS, sid
+    out['services'][sid] = build_service(sid, sv, [KEYS[sid][lines(r[1])[0]] for r in rows[3:]])
+
+# ---------------- 예배 외 행사 (표 4, 13-17) ----------------
+EVENT_KEYS = {
+ 'STAND-BY':'standby','찬양':'praise','합심 기도':'prayer','성경 봉독':'bible','본문봉독':'bible','설교':'sermon','설교 후 찬양':'postpraise',
+ '광고 및 마무리':'closing','인트로 영상':'intro','Christmas 인트로 영상':'intro','INTRO 영상':'intro','특순':'special','광고/ 설교자 소개':'announce',
+ '설교 후 기도':'postprayer','안내':'guide','안수기도':'laying','대표 기도 (한영)':'prayer','대표기도':'prayer','예수님 세례 영상':'video',
+ '간증':'testimony','세례식':'baptism','축복송':'blessing','축복':'blessing','광고':'announce','축도':'benediction',
+ '영상: 설교자 등장 영상':'video1','소개영상':'video2','사회/순서소개':'host','예꿈 United':'yekkum','파워웨이브 NC/United':'powerwave',
+ '영상: 예꿈, 꿈땅, 파워웨이브 영상':'video3','꿈땅 NC/United':'kkumttang','영상: 꿈땅 Jr. 영상':'video4','꿈땅 Jr.':'kkumttangjr',
+ '꿈땅 Sr.':'kkumttangsr','파워웨이브 Sr./United':'powerwavesr','사회/광고':'hostannounce','마무리 찬양':'closing','마무리 및 축도':'benediction',
+ '한해 감사 영상':'thanksvideo','차세대 영상 설교':'nextgen','교역자 특순':'staffspecial','봉헌 찬양':'offering','봉헌기도':'offerprayer',
+ 'Ending Song':'ending','강사소개':'speaker','기도':'prayer','마무리':'closing',
+}
+EVENT_NOTE = '예배 외 행사 구성은 예배 본부 담당 목회자와 본부장, 그리고 행사 주체가 되는 본부와 소통하여 확정 및 cue sheet 작성을 해야합니다.'
+CAST_NOTE = '출연(헤더) 항목은 가이드라인 표에 없음 — 각 행의 담당 기준으로 구성'
+MICS = {'설교자':'헤드셋 Mic','인도자':'인도자 Mic','사회자':'사회자 Mic'}
+EV = {
+ 'wed': dict(table=4, label='수요성령집회', weekday=3, note='수요성령집회는 매주 수요일 7시반에 시작되는 예배입니다.',
+             cast=[['인도','인도'],['설교','설교']], roleMics=MICS),
+ 'newyear': dict(table=13, label='신년집회', cast=[['인도','인도'],['사회','사회'],['설교','설교'],['특순','특순',True]], roleMics=MICS),
+ 'baptism': dict(table=14, label='세례식', cast=[['인도','인도'],['대표기도','대표기도'],['설교','설교'],['간증','간증',True]],
+                 roleMics={'설교자':'헤드셋 Mic','인도자':'Leader Mic','대표기도자':'기도자 Mic','간증자':'간증자 Mic'}),
+ 'christmas': dict(table=15, label='Christmas Wonder', cast=[['인도','인도'],['사회','사회'],['설교','설교']], roleMics=MICS),
+ 'yearend': dict(table=16, label='송구영신예배', cast=[['인도','인도'],['대표기도','대표기도'],['봉독','봉독'],['설교','설교'],['통역','통역'],['특순','특순',True]],
+                 roleMics={'설교자':'헤드셋 Mic','인도자':'Leader Mic','대표기도자':'기도자 Mic','봉독자':'봉독자 Mic','통역자':'통역자 Mic','특순자':'특순자 Mic'}),
+ 'bridge': dict(table=17, label='The Bridge 집회', cast=[['인도','인도'],['사회','사회'],['설교','설교']], roleMics=MICS),
+}
+occasions = [{'id':'sunday','label':'주일 예배','services':['1','2','4'],'weekday':0}]
+for sid, ev in EV.items():
+    rows = tbl[ev['table']]['rows']
+    cm = dict((c, ci) for ci, c in colmap(rows))
+    titles = [lines(r[cm['content']])[0].lstrip('▶').strip() for r in rows[3:]]
+    base = [EVENT_KEYS[t] for t in titles]
+    keys = []
+    for n, b in enumerate(base):  # repeated rows (합심 기도, 사회/순서소개) get numbered keys
+        keys.append(b + str(base[:n+1].count(b)) if base.count(b) > 1 else b)
+    assert len(set(keys)) == len(keys), keys
+    first = lines(rows[3][0])[0]
+    videos = {k: t for k, t, r in zip(keys, titles, rows[3:]) if lines(r[cm['mic']]) == ['영상']}
+    sv = dict(label=ev['label'], title=ev['label'] + ' Cue-Sheet', start=first, template='service2.docx',
+              fileName='{yyyy} {mmdd} %s 큐시트' % ev['label'], table=ev['table'], cast=ev['cast'], roleMics=ev['roleMics'],
+              aliases={}, video=videos, source=S('표 %d (%s)' % (ev['table'], ev['label']), CAST_NOTE))
+    out['services'][sid] = build_service(sid, sv, keys)
+    occasions.append({'id':sid,'label':ev['label'],'services':[sid],'weekday':ev.get('weekday'),'note':ev.get('note', EVENT_NOTE)})
+out['occasions'] = occasions
 
 # ---------------- specials ----------------
 def row(key, name, aliases, dur, cells, **kw):
