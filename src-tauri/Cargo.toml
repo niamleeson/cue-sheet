@@ -1,6 +1,6 @@
 [package]
 name = "cuesheet-app"
-version = "0.1.0"
+version = "0.2.0"
 description = "주일 예배 큐시트 메이커"
 authors = ["New Jersey Onnuri Church"]
 edition = "2024"
