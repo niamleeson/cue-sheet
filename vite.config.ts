@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import preact from "@preact/preset-vite";
 // @ts-expect-error type error without @types/node package
@@ -7,6 +8,12 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(() => ({
   plugins: [preact()],
+
+  // GitHub's Windows runners can be several times slower than a Mac: a first page render that
+  // takes under a second here once took 7 s there, past Vitest's 5 s default.
+  test: {
+    testTimeout: 30_000,
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
