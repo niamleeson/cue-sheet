@@ -186,7 +186,6 @@ export function OrderList({ doc, sid, sheet, services, change, highlight, onHigh
                 kind={f.kind}
                 k={f.key}
                 label={f.label}
-                services={services}
                 change={change}
                 splitSongs={f.key === '찬양1' && sheet.rows.some((x) => x.fields.lists.includes('찬양2'))}
                 placeholder={f.kind === 'lists' ? (defaults.lists.get(f.key) ?? []).join('\n') : defaults.scalars.get(f.key) ?? ''}
@@ -198,7 +197,7 @@ export function OrderList({ doc, sid, sheet, services, change, highlight, onHigh
             ))}
           </div>
         )}
-        {adding?.after !== r.key && <button class="row-add" title="이 순서 뒤에 순서 추가" onClick={() => setAdding({ after: r.key })}>+</button>}
+        {adding?.after !== r.key && <button class="row-add" title="이 순서 뒤에 순서 추가" aria-label="이 순서 뒤에 순서 추가" onClick={() => setAdding({ after: r.key })}><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg></button>}
         {adding?.after === r.key && <AddMenu doc={doc} sid={sid} services={services} after={r.key} afterName={r.name} change={change} onClose={() => setAdding(null)} />}
       </div>
     );
@@ -207,9 +206,7 @@ export function OrderList({ doc, sid, sheet, services, change, highlight, onHigh
   return (
     <>
       <section>
-        <h3>
-          순서 <span class="muted small">{sheet.rows[0]?.start}–{sheet.end} · 끌어서 순서 바꾸기</span>
-        </h3>
+        <h3>순서</h3>
         <div class={`order-list ${drag ? 'is-dragging' : ''}`} ref={listRef}>
           {sheet.rows.map(row)}
           {drag && !stays && dropBefore === null && <div class="drop-line end" />}

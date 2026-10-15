@@ -30,7 +30,9 @@
 
 1. **+ 새 큐시트…**: 날짜(다음 주일이 들어가 있음)와 **시작할 내용**을 고릅니다. 지난 큐시트에서 시작하면 출연·스태프·Mic 수, 순서·시간, 미리보기에서 고친 칸을 가져오고 찬양·본문 같은 그 주의 내용은 비웁니다 (가져올 것을 체크로 고름).
 2. 이번 주 정보를 입력합니다. **텍스트로 입력**에 붙여넣거나 (아래 형식) 왼쪽 칸에 직접 적습니다.
-   - **공통** 표시가 붙은 칸(설교, 본문, 설교제목 …)은 한 번 적으면 1부·2부·4부에 모두 들어갑니다. **이 예배만** 칸(사회, 인도, 스태프, 찬양 …)은 예배마다 따로입니다. 표시를 누르면 공통 ↔ 이 예배만이 바뀝니다.
+   - 한 예배에 적은 내용은 다른 예배에도 그대로 들어가고, 다른 예배의 칸에는 연한 파란 바탕에 회색 글씨(placeholder)로 보입니다 (흰 바탕의 연한 회색 `OOO 목사` 같은 글씨는 입력 예시입니다). 그 예배만 다르면 그 칸에 새로 적으면 됩니다 (처음부터). 회색 글씨를 고쳐 쓰려면 **수정**을 누르면 그 글씨가 이 예배의 내용이 되어 고칠 수 있습니다.
+   - 처음 적은 예배에서 고치면 따라 쓰는 예배가 모두 바뀌고, 지우면 모두 지워집니다. 다른 예배에서 따로 적은 내용을 지우면 다시 회색 글씨(처음 적은 예배의 내용)를 따릅니다.
+   - 2부 사회는 가이드라인상 없으면 비워 두는 칸이라 다른 예배의 사회를 따르지 않습니다.
    - 스태프는 “다른 예배에서 복사…”로 가져올 수 있습니다.
 3. [순서](#순서)를 맞추고, 필요한 칸은 [미리보기에서 고칩니다](#미리보기에서-칸-고치기).
 4. 오른쪽의 **확인할 점**과 **한 페이지 사용 %**를 봅니다.
@@ -57,7 +59,7 @@
 
 - 미리보기의 칸을 누르면 그 아래에 입력창이 열립니다. 한 줄에 하나씩 적고 **⌘↵** (Windows: **Ctrl+Enter**) 또는 다른 곳을 누르면 저장, **Esc**는 취소입니다.
 - 저장하면 큐시트 형식(시각, ‘분’, Mic, “-” 같은 기호)에 맞게 정리됩니다. 찬양·본문·설교제목·봉헌위원, 출연·스태프 이름, Mic 수, 분·시작 시각처럼 입력 칸이 있는 내용은 그 입력에 저장되고, 나머지는 **변경 사항 (고급)**에 줄 단위로 기록됩니다.
-- **다른 예배에도 적용**: 지금 이 칸과 내용이 같은 예배는 미리 체크되어 있습니다. 끄면 이 예배만 바뀝니다. 공통 칸(설교제목 등)은 모든 예배에서 바뀝니다.
+- **다른 예배에도 적용**: 지금 이 칸과 내용이 같은 예배는 미리 체크되어 있습니다. 체크한 예배만 바뀌고, 체크하지 않은 예배는 지금 보이는 내용을 그대로 둡니다. 출연·스태프 이름 칸은 왼쪽 입력 칸에 적은 것과 같습니다.
 - 고친 칸은 점선으로 표시됩니다 (**규칙 표시**를 끄면 숨김). 입력창의 **↺ 원래대로**로 되돌립니다.
 - **담당**을 바꾸면 (예: 사회자 → 설교자) 같은 줄의 음향 Mic와 세부사항의 이름도 그 칸에 있을 때만 함께 바뀝니다. 그 칸을 열면 **담당 변경으로 바뀐 칸**으로 표시되고, ↺로 그 칸만 되돌릴 수 있습니다 (담당 변경은 그대로).
 - 저장하지 못한 칸은 열린 채로 남습니다 (다른 곳을 눌러도 넘어가지 않음). 고치거나 **취소**를 누르세요.
@@ -193,8 +195,8 @@ npm run tauri build -- --bundles app   # macOS .app (plain `npm run tauri build`
 
 | Path | What |
 |---|---|
-| `src/core/doc.ts` | the saved document (`CueDoc`): one occasion + date, all its services, 공통 / 이 예배만 fields, cell edits |
-| `src/core/ops.ts` | every change the form makes (reorder, durations, specials, custom rows, 공통 ↔ 이 예배만, new from previous) |
+| `src/core/doc.ts` | the saved document (`CueDoc`): one occasion + date, all its services, shared fields (+ the service they were typed in) and each service's own, cell edits |
+| `src/core/ops.ts` | every change the form makes (reorder, durations, specials, custom rows, typing / 수정 of fields, new from previous) |
 | `src/core/cellsave.ts`, `src/core/targets.ts`, `src/core/lineops.ts` | typing into a preview cell: clickable cell boxes, autoformat, writing back to fields or line edits |
 | `src/core/engine.ts` | rules + a document → each service's cue sheet rows, warnings, prep list |
 | `src/core/parse.ts`, `src/core/migrate.ts` | the text input format; merging parsed text (and v0.1 input) into a document |

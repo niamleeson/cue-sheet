@@ -232,9 +232,12 @@ select.mini { margin-left: auto; font-size: 12px; font-weight: 400; padding: 2px
 .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .actions .muted { margin-left: auto; }
 .field-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 20px; }
-button.mode { padding: 0 7px; font-size: 11px; line-height: 18px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
-button.mode.shared, button.mode.shared:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); border-color: #cdd9f7; }
-button.mode.own, button.mode.own:hover:not(:disabled) { background: #f3f4f6; color: #6b7280; border-color: #e3e5e9; font-weight: 500; }
+/* a value typed in another service's form: the placeholder; 수정 makes it this service's own text */
+button.take { padding: 0 8px; font-size: 11px; line-height: 18px; border-radius: 999px; font-weight: 600; white-space: nowrap; background: var(--accent-soft); color: var(--accent); border-color: #cdd9f7; }
+button.take:hover:not(:disabled) { background: #dfe7fb; border-color: #b9caf5; }
+input::placeholder, textarea::placeholder { color: #a0a6b0; opacity: 1; }
+.inherit { background: #f6f8fe; }
+.inherit::placeholder { color: #4b5563; opacity: 1; }
 .row-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .check.block { display: flex; margin: 5px 0; }
 .event-note { margin-bottom: 12px; }
@@ -263,12 +266,17 @@ input.row-name.custom { flex: 1 1 auto; padding: 2px 6px; cursor: text; }
 .row-note { margin: 2px 0 0 calc(3.3em + 30px); }
 .row-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 10px; margin: 6px 0 10px 30px; }
 .row-fields .field.wide { margin-bottom: 0; }
+.row-card { --bl: 1px; }
+.row-card.special, .row-card.custom { --bl: 3px; }
+/* centered on the card's outer box and in the middle of the 6px gap below it (1px border + 3px) */
 .row-add {
   position: absolute;
-  left: 50%;
-  bottom: -11px;
+  left: calc(50% - (var(--bl) - 1px) / 2);
+  bottom: -15px;
   z-index: 2;
   transform: translateX(-50%);
+  display: grid;
+  place-items: center;
   width: 22px;
   height: 22px;
   padding: 0;
@@ -276,11 +284,10 @@ input.row-name.custom { flex: 1 1 auto; padding: 2px 6px; cursor: text; }
   border-color: #b9caf5;
   background: #fff;
   color: var(--accent);
-  font-weight: 700;
-  line-height: 20px;
   opacity: 0;
   transition: opacity 0.1s;
 }
+.row-add svg { display: block; }
 .row-card:hover .row-add, .row-add:focus-visible { opacity: 1; }
 .is-dragging .row-add { display: none; }
 @media (hover: none) { .row-add { opacity: 0.7; } }

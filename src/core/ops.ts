@@ -1,9 +1,12 @@
 /**
- * Changes the form makes to a document: the order list (drag, add, take out, put back), durations, 공통 / 이 예배만
- * fields, and starting a new document from an earlier one. All of them mutate `doc`; the UI works on a copy.
+ * Changes the form makes to a document: the order list (drag, add, take out, put back), durations, fields typed in a
+ * service's form (the shared value and each service's own), and starting a new document from an earlier one. All of
+ * them mutate `doc`; the UI works on a copy.
  */
 import { buildSheet, guidelineRows, sundayIndex } from './engine';
-import { clone, computeMoves, emptyDoc, fieldMode, fieldValue, newId, SHARED_DEFAULT } from './doc';
+import {
+  clone, computeMoves, docServices, emptyDoc, fieldShow, fieldValue, followers, hasOwn, isBlank, newId, originOf, ownOnly, setShared,
+} from './doc';
 import type { FieldKind } from './doc';
 import type { CueDoc, Fields, RulesFile, ServiceDoc } from './types';
 
@@ -112,53 +115,67 @@ export function renameCustom(doc: CueDoc, key: string, title: string) {
 
 // ---------------- fields ----------------
 
-const isEmpty = (v: string | string[]) => (Array.isArray(v) ? !v.some((x) => x.trim()) : !v.trim());
+const own = (doc: CueDoc, sid: string, kind: FieldKind) => doc.services[sid][kind] as Record<string, unknown>;
 
-/** Types a field where it lives now: 공통 changes every service that uses the shared value, 이 예배만 only this one. */
-export function writeField<K extends FieldKind>(doc: CueDoc, sid: string, kind: K, key: string, value: Fields[K][string]) {
-  const mode = fieldMode(doc, sid, kind, key);
-  const holder = (mode === 'own' ? doc.services[sid][kind] : doc.shared[kind]) as Record<string, unknown>;
-  if (!isEmpty(value)) {
-    holder[key] = value;
+/**
+ * Typing in a service's form. Where nothing is shown yet, or where the shared value was typed, the value is the shared
+ * one: every service without its own takes it (their forms show it as the placeholder). Typing over the placeholder
+ * gives this service its own value; emptying its own value shows the shared one again.
+ */
+export function writeField<K extends FieldKind>(rules: RulesFile, doc: CueDoc, sid: string, kind: K, key: string, value: Fields[K][string]) {
+  const mine = own(doc, sid, kind);
+  if (ownOnly(rules, sid, kind, key) || key in mine) {
+    if (isBlank(value)) delete mine[key];
+    else mine[key] = clone(value);
     return;
   }
-  // an empty value stays where it is when deleting it would flip 공통 / 이 예배만 (or show the shared value again)
-  const keep = mode === 'own' ? key in doc.shared[kind] || SHARED_DEFAULT.has(key) : !SHARED_DEFAULT.has(key);
-  if (keep) holder[key] = Array.isArray(value) ? [] : '';
-  else delete holder[key];
+  const o = originOf(rules, doc, kind, key);
+  if (o == null || o === sid) setShared(doc, kind, key, value, sid);
+  else if (!isBlank(value)) mine[key] = clone(value);
 }
 
-/** Services that show something else than `sid` for a field (공통으로 바꾸면 바뀌는 예배). */
-export function differingServices(doc: CueDoc, sid: string, kind: FieldKind, key: string): string[] {
-  const j = (v: unknown) => JSON.stringify(Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : typeof v === 'string' ? v.trim() : '');
-  const mine = j(fieldValue(doc, sid, kind, key));
-  return Object.keys(doc.services).filter((s) => {
-    if (s === sid) return false;
-    const v = j(fieldValue(doc, s, kind, key));
-    return v !== mine && v !== j('') && v !== j([]);
-  });
+/** 수정: the placeholder (the shared value typed in another service) becomes this service's own text, to change from there. */
+export function takeShared(rules: RulesFile, doc: CueDoc, sid: string, kind: FieldKind, key: string) {
+  const from = fieldShow(rules, doc, sid, kind, key).from;
+  if (from) own(doc, sid, kind)[key] = clone(from.value);
 }
 
-/** 공통: this service's value becomes the one value of every service. */
-export function makeShared(doc: CueDoc, sid: string, kind: FieldKind, key: string) {
-  const v = fieldValue(doc, sid, kind, key);
-  (doc.shared[kind] as Record<string, unknown>)[key] = clone(v ?? (kind === 'lists' ? [] : ''));
-  for (const sd of Object.values(doc.services)) delete (sd[kind] as Record<string, unknown>)[key];
+/**
+ * A field typed in a preview cell for the services picked for the change; the other services keep what they show
+ * (`shows`: the services that show the field).
+ */
+export function writeFieldFor(
+  rules: RulesFile, doc: CueDoc, kind: FieldKind, key: string, value: string | string[], picked: string[], shows: Set<string>,
+) {
+  const sids = docServices(rules, doc);
+  const f = followers(rules, doc, kind, key);
+  const pf = picked.filter((s) => f.includes(s));
+  const keep = f.filter((s) => shows.has(s) && !picked.includes(s));
+  const o = originOf(rules, doc, kind, key);
+  if (pf.length) {
+    if (!keep.length) setShared(doc, kind, key, value, o ?? pf[0]);
+    else if (o != null && picked.includes(o)) {
+      for (const s of keep) own(doc, s, kind)[key] = clone(doc.shared[kind][key]);
+      setShared(doc, kind, key, value, o);
+    } else if (!isBlank(value)) for (const s of pf) own(doc, s, kind)[key] = clone(value);
+  }
+  for (const s of picked) {
+    if (pf.includes(s) || !sids.includes(s)) continue;
+    if (isBlank(value)) delete own(doc, s, kind)[key];
+    else own(doc, s, kind)[key] = clone(value);
+  }
 }
 
-/** 이 예배만: the service keeps what it shows now as its own value; the others are not touched. */
-export function makeOwn(doc: CueDoc, sid: string, kind: FieldKind, key: string) {
-  const v = fieldValue(doc, sid, kind, key);
-  (doc.services[sid][kind] as Record<string, unknown>)[key] = clone(v ?? (kind === 'lists' ? [] : ''));
-}
-
-/** 다른 예배에서 복사: the staff of `from` becomes this service's own. */
-export function copyPeople(doc: CueDoc, from: string, to: string, keys: string[]) {
+/**
+ * 다른 예배에서 복사: the staff `from` shows, typed into this service's form (names `from` does not have stay). Where `from`
+ * shows the shared value, this service takes the shared value too.
+ */
+export function copyPeople(rules: RulesFile, doc: CueDoc, from: string, to: string, keys: string[]) {
   for (const k of keys) {
-    const v = fieldValue(doc, from, 'people', k) ?? '';
-    if (v === (fieldValue(doc, to, 'people', k) ?? '')) continue;
-    if (v !== '' || k in doc.shared.people || SHARED_DEFAULT.has(k)) doc.services[to].people[k] = v;
-    else delete doc.services[to].people[k];
+    const v = fieldValue(rules, doc, from, 'people', k) ?? '';
+    if (isBlank(v) || v === (fieldValue(rules, doc, to, 'people', k) ?? '')) continue;
+    if (!hasOwn(doc, from, 'people', k) && !ownOnly(rules, to, 'people', k)) delete own(doc, to, 'people')[k];
+    else writeField(rules, doc, to, 'people', k, v);
   }
 }
 
@@ -181,10 +198,15 @@ export const COPY_DEFAULT: CopyParts = { people: true, order: true, edits: true,
 export function copyDoc(rules: RulesFile, prev: CueDoc, date: string, parts: CopyParts, at = new Date().toISOString()): CueDoc {
   const doc = emptyDoc(rules, prev.kind, date);
   doc.updatedAt = at;
-  if (parts.people) doc.shared.people = clone(prev.shared.people);
+  if (parts.people) {
+    doc.shared.people = clone(prev.shared.people);
+    doc.origin.people = clone(prev.origin.people);
+  }
   if (parts.content) {
     doc.shared.values = clone(prev.shared.values);
     doc.shared.lists = clone(prev.shared.lists);
+    doc.origin.values = clone(prev.origin.values);
+    doc.origin.lists = clone(prev.origin.lists);
   }
   const custom = new Set<string>();
   for (const [sid, sd] of Object.entries(doc.services)) {

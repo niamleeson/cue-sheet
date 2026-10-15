@@ -139,7 +139,10 @@ export interface CueDoc {
   date: string; // YYYY-MM-DD
   name?: string;
   updatedAt: string;
+  /** values every service takes unless it has its own (typed once, in any service's form) */
   shared: Fields;
+  /** the service whose form a shared value was typed in; the other services show it as a placeholder */
+  origin: Record<keyof Fields, Record<string, string>>;
   services: Record<string, ServiceDoc>;
   edits: CellEdit[];
 }

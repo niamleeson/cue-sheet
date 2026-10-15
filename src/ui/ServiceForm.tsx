@@ -44,7 +44,7 @@ export function ServiceForm({ doc, sid, sheet, services, change, highlight, onHi
   const sd = doc.services[sid];
   const occ = occasionOf(rules, doc.kind);
   const people = (k: string, label: string) => (
-    <DocField key={k} doc={doc} sid={sid} kind="people" k={k} label={label} placeholder={PEOPLE_HINT[k] ?? ''} services={services} change={change} />
+    <DocField key={k} doc={doc} sid={sid} kind="people" k={k} label={label} placeholder={PEOPLE_HINT[k] ?? ''} change={change} />
   );
   const startChanged = sd.start != null && sd.start !== svc.start;
 
@@ -80,7 +80,7 @@ export function ServiceForm({ doc, sid, sheet, services, change, highlight, onHi
               onChange={(e) => {
                 const from = val(e);
                 e.currentTarget.value = '';
-                if (from) change((d) => copyPeople(d, from, sid, rules.staffOrder));
+                if (from) change((d) => copyPeople(rules, d, from, sid, rules.staffOrder));
               }}
             >
               <option value="">다른 예배에서 복사…</option>
@@ -133,7 +133,7 @@ function EditList({ doc, sid, sheet, change, onOpenCell }: { doc: CueDoc; sid: s
             <div class="edit-head">
               <b>{rowLabel(doc, sid, sheet, e.row)}</b>
               <span class="muted">· {EDIT_COL_LABELS[e.col]}</span>
-              <span class="chip">{e.services.length > 1 ? e.services.map(svcLabel).join('·') : '이 예배만'}</span>
+              {Object.keys(doc.services).length > 1 && <span class="chip">{e.services.map(svcLabel).join('·')}</span>}
               {!here && <span class="chip flag">이번 주 없음</span>}
               {bad && <span class="chip flag" title="고친 줄을 찾지 못해 일부가 적용되지 않았습니다">적용 안 됨</span>}
               <button class="ghost undo" title="이 변경 되돌리기" onClick={(ev) => { ev.stopPropagation(); void undo(e); }}>↺</button>

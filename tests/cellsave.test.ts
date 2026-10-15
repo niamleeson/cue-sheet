@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import rulesJson from '../src/rules/rules.json';
 import { buildDoc, buildSheet, fmtMin, guidelineRows, toMin } from '../src/core/engine';
-import { computeMoves, emptyDoc } from '../src/core/doc';
+import { computeMoves, emptyDoc, fieldValue } from '../src/core/doc';
+import { writeField } from '../src/core/ops';
 import {
   autoformat, cellLines, cellText, diffOps, linkedEdits, removeEdit, resetCell, saveCell, scopeChoices, similarity, tidy, unformat,
 } from '../src/core/cellsave';
@@ -54,24 +55,48 @@ describe('autoformat', () => {
 });
 
 describe('saveCell: typed data goes back to the fields', () => {
-  it('설교제목 (공통) typed in 1부 shows in every service', () => {
-    const r = save(sunday(), '1', 'sermon', 'content', '▶ 설교\n- 은혜의 강물');
-    expect(r.doc.shared.lists['설교제목']).toEqual(['은혜의 강물']);
+  it('설교제목 typed in 1부 for every service is the shared value, as if typed in 1부\'s form', () => {
+    const r = save(sunday(), '1', 'sermon', 'content', '▶ 설교\n- 은혜의 강물', ['2', '4']);
+    expect([r.doc.shared.lists, r.doc.origin.lists]).toEqual([{ 설교제목: ['은혜의 강물'] }, { 설교제목: '1' }]);
     expect(r.edits).toEqual([]);
     expect(r.doc.edits).toEqual([]);
-    expect(r.changes).toEqual(['설교제목: 은혜의 강물 — 공통']);
+    expect(r.changes).toEqual(['설교제목: 은혜의 강물 — 1부, 2부, 4부 (P130)']);
     for (const sid of ['1', '2', '4']) expect(cell(r.doc, sid, 'sermon', 'content')).toBe('▶설교\n- 은혜의 강물');
     roundTrip(r.doc, '4', 'sermon', 'content');
+    // only 1부 picked: the others keep showing nothing
+    const one = save(sunday(), '1', 'sermon', 'content', '▶ 설교\n- 은혜의 강물');
+    expect([one.doc.services['1'].lists, one.doc.shared.lists]).toEqual([{ 설교제목: ['은혜의 강물'] }, {}]);
+    expect(one.changes).toEqual(['설교제목: 은혜의 강물 — 1부']);
+    expect(cell(one.doc, '2', 'sermon', 'content')).toBe(cell(sunday(), '2', 'sermon', 'content'));
   });
 
-  it('찬양 (이 예배만) stays in its service unless other services are picked', () => {
+  it('a shared value changed for some services: the services not picked keep what they showed', () => {
+    const doc = sunday();
+    writeField(rules, doc, '1', 'lists', '설교제목', ['은혜']);
+    const r = save(doc, '1', 'sermon', 'content', '▶설교\n- 사랑', ['4']);
+    expect([r.doc.shared.lists, r.doc.origin.lists]).toEqual([{ 설교제목: ['사랑'] }, { 설교제목: '1' }]);
+    expect(r.doc.services['2'].lists).toEqual({ 설교제목: ['은혜'] });
+    expect(r.changes).toEqual(['설교제목: 사랑 — 1부, 4부 (P130)']);
+    // picked without the service it was typed in: their own value
+    const two = save(doc, '2', 'sermon', 'content', '▶설교\n- 소망');
+    expect([two.doc.services['2'].lists, two.doc.shared.lists]).toEqual([{ 설교제목: ['소망'] }, { 설교제목: ['은혜'] }]);
+    // emptied for one service: the data cannot say so, the line is taken out as a cell change
+    const off = save(doc, '4', 'sermon', 'content', '▶설교');
+    expect(off.doc.shared.lists).toEqual({ 설교제목: ['은혜'] });
+    expect(off.edits.map((e) => [e.row, e.col, e.services])).toEqual([['sermon', 'content', ['4']]]);
+    expect([cell(off.doc, '4', 'sermon', 'content'), cell(off.doc, '2', 'sermon', 'content')]).toEqual(['▶설교', '▶설교\n- 은혜']);
+  });
+
+  it('찬양 stays in its service unless other services are picked', () => {
     const r = save(sunday(), '1', 'praise', 'content', '▶찬양\n1. 주의 사랑\n2.날 구원하신\n3. 은혜');
     expect(r.doc.services['1'].lists['찬양']).toEqual(['주의 사랑', '날 구원하신', '은혜']);
     expect(r.doc.services['2'].lists['찬양']).toBeUndefined();
+    expect(r.doc.shared.lists).toEqual({});
     expect(r.doc.edits).toEqual([]);
     expect(cell(r.doc, '1', 'praise', 'content')).toBe('▶찬양\n1. 주의 사랑\n2. 날 구원하신\n3. 은혜');
     const both = save(sunday(), '1', 'praise', 'content', '▶찬양\n1. A\n2. B', ['2']);
-    expect([both.doc.services['1'].lists['찬양'], both.doc.services['2'].lists['찬양']]).toEqual([['A', 'B'], ['A', 'B']]);
+    expect([both.doc.shared.lists, both.doc.origin.lists]).toEqual([{ 찬양: ['A', 'B'] }, { 찬양: '1' }]);
+    expect(fieldValue(rules, both.doc, '2', 'lists', '찬양')).toEqual(['A', 'B']);
     expect(cell(both.doc, '2', 'praise', 'content')).toBe('▶찬양\nA\nB');
     expect(both.changes).toEqual(['찬양: A / B — 1부, 2부']);
   });
@@ -161,18 +186,26 @@ describe('saveCell: typed data goes back to the fields', () => {
     expect(r.doc.edits).toEqual([]);
   });
 
-  it('header: people; 공통 설교 changes everywhere, 이 예배만 names stay in the service', () => {
+  it('header: names are typed like in the service\'s form', () => {
     const r = save(sunday(), '1', 'header', 'cast', '인도: 김인도\n■사회:박사회\n■설교: 홍목사');
-    expect(r.doc.services['1'].people).toEqual({ 인도: '김인도', 사회: '박사회' });
-    expect(r.doc.shared.people).toEqual({ 설교: '홍목사' });
+    expect(r.doc.services['1'].people).toEqual({});
+    expect(r.doc.shared.people).toEqual({ 인도: '김인도', 사회: '박사회', 설교: '홍목사' });
+    expect(r.doc.origin.people).toEqual({ 인도: '1', 사회: '1', 설교: '1' });
     expect(r.doc.edits).toEqual([]);
-    expect(sheet(r.doc, '4').header.cast).toEqual(['■사회:', '■설교: 홍목사', '■인도:']);
+    expect(r.changes).toEqual(['인도: 김인도 — 1부, 2부, 4부 (P130)', '사회: 박사회 — 1부, 4부 (P130)', '설교: 홍목사 — 1부, 2부, 4부 (P130)']);
+    expect(sheet(r.doc, '4').header.cast).toEqual(['■사회: 박사회', '■설교: 홍목사', '■인도: 김인도']);
+    expect(fieldValue(rules, r.doc, '2', 'people', '사회')).toBeUndefined();
+    // typed where there is none yet: the shared value, the other services show it too
     const st = save(r.doc, '2', 'header', 'staff', cell(r.doc, '2', 'header', 'staff').replace('-PD:', '-PD: 김피디'));
-    expect(st.doc.services['2'].people['PD']).toBe('김피디');
-    expect(st.doc.services['1'].people['PD']).toBeUndefined();
-    // a cleared name is written as empty for this service
+    expect([st.doc.shared.people['PD'], st.doc.origin.people['PD']]).toEqual(['김피디', '2']);
+    expect(sheet(st.doc, '1').header.staff).toContain('-PD: 김피디');
+    // typed over another service's name: this service's own
+    const own = save(r.doc, '4', 'header', 'cast', '■사회: 박사회\n■설교: 이목사\n■인도: 김인도');
+    expect([own.doc.services['4'].people, own.doc.shared.people['설교']]).toEqual([{ 설교: '이목사' }, '홍목사']);
+    // cleared where it was typed: gone everywhere
     const cleared = save(r.doc, '1', 'header', 'cast', '■인도:\n■사회: 박사회\n■설교: 홍목사');
-    expect(cleared.doc.services['1'].people['인도']).toBe('');
+    expect(cleared.doc.shared.people['인도']).toBeUndefined();
+    expect(sheet(cleared.doc, '4').header.cast).toEqual(['■사회: 박사회', '■설교: 홍목사', '■인도:']);
   });
 });
 

@@ -1,6 +1,6 @@
 import { buildSheet, guidelineRows, norm, patternMatch, rowMatches, specialRowRefs, sundayIndex } from './engine';
 import { roleLinks } from './cellsave';
-import { clone, computeMoves, emptyDoc, hoistShared, newId, occasionOf } from './doc';
+import { clone, computeMoves, emptyDoc, hoistShared, isBlank, newId, occasionOf, ownOnly } from './doc';
 import type { CellEdit, CueDoc, Kind, RulesFile, ServiceDoc, ServiceInput, Sheet, WeekInput } from './types';
 
 const KINDS = ['people', 'values', 'lists'] as const;
@@ -22,7 +22,14 @@ function addEdits(doc: CueDoc, edits: CellEdit[]) {
 function fillService(rules: RulesFile, doc: CueDoc, sid: string, inp: ServiceInput, at: string) {
   const svc = rules.services[sid];
   const sd: ServiceDoc = doc.services[sid];
-  for (const kind of KINDS) Object.assign(sd[kind], clone(inp[kind] ?? {}));
+  // an empty field in the text is nothing typed: the service shows the shared value
+  for (const kind of KINDS) {
+    const own = sd[kind] as Record<string, unknown>;
+    for (const [k, v] of Object.entries(clone(inp[kind] ?? {}))) {
+      if (isBlank(v)) delete own[k];
+      else own[k] = v;
+    }
+  }
   for (const [k, v] of Object.entries(inp.specials ?? {})) if (v != null) sd.specials[k] = v;
   if (inp.start) sd.start = inp.start;
   if (inp.vocals != null) sd.vocals = inp.vocals;
@@ -121,7 +128,7 @@ function fillService(rules: RulesFile, doc: CueDoc, sid: string, inp: ServiceInp
   addEdits(doc, edits);
 }
 
-/** v1 week input (text import / old saved data) → document. Fields equal in every service become shared (공통). */
+/** v1 week input (text import / old saved data) → document. Fields equal in every service become the shared value. */
 export function weekToDoc(rules: RulesFile, week: WeekInput, kind: Kind = 'sunday', at = new Date().toISOString()): CueDoc {
   const doc = emptyDoc(rules, kind, week.date);
   doc.updatedAt = at;
@@ -129,7 +136,7 @@ export function weekToDoc(rules: RulesFile, week: WeekInput, kind: Kind = 'sunda
     const inp = week.services[sid];
     if (inp) fillService(rules, doc, sid, inp, at);
   }
-  hoistShared(doc);
+  hoistShared(rules, doc);
   return doc;
 }
 
@@ -158,9 +165,9 @@ export function importWeek(rules: RulesFile, base: CueDoc | null, week: WeekInpu
     for (const kind of KINDS) {
       const own = doc.services[sid][kind] as Record<string, unknown>;
       const shared = doc.shared[kind] as Record<string, unknown>;
-      for (const k of Object.keys(week.services[sid][kind] ?? {})) if (k in shared && same(shared[k], own[k])) delete own[k];
+      for (const k of Object.keys(week.services[sid][kind] ?? {})) if (k in shared && !ownOnly(rules, sid, kind, k) && same(shared[k], own[k])) delete own[k];
     }
   }
-  hoistShared(doc, sids);
+  hoistShared(rules, doc);
   return doc;
 }

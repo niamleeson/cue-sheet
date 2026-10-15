@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import raw from '../src/rules/guideline-raw.json';
 import rulesJson from '../src/rules/rules.json';
 import { buildDoc, buildSheet, emptyWeek, guidelineRows } from '../src/core/engine';
-import { applyMoves, computeMoves, emptyDoc, hoistShared, setFieldMode } from '../src/core/doc';
+import { applyMoves, computeMoves, emptyDoc, hoistShared } from '../src/core/doc';
 import { applyOps } from '../src/core/lineops';
 import { importWeek, weekToDoc } from '../src/core/migrate';
 import type { CellEdit, Kind, OutLine, RulesFile } from '../src/core/types';
@@ -73,7 +73,6 @@ describe('document', () => {
     expect([s1, s2, s4].map((s) => s.header.cast.find((c) => c.startsWith('■설교')))).toEqual(Array(3).fill('■설교: 홍길동 목사'));
     expect(s4.header.cast[0]).toBe('■사회: 김사회 목사');
     expect(s1.header.cast[1]).toBe('■사회:');
-    setFieldMode(doc, '2', 'people', '설교', 'own');
     doc.services['2'].people['설교'] = '이목사';
     const preacher = (sid: string) => buildSheet(rules, doc, sid).header.cast.find((c) => c.startsWith('■설교'));
     expect(preacher('2')).toBe('■설교: 이목사');
@@ -128,12 +127,14 @@ describe('document', () => {
 
   it('migration hoists fields every service shares', () => {
     const w = emptyWeek('2026-10-18');
-    for (const sid of ['1', '2', '4']) { w.services[sid].people['설교'] = '같은 목사'; w.services[sid].people['사회'] = `사회${sid}`; }
+    for (const sid of ['1', '2', '4']) { w.services[sid].people['설교'] = '같은 목사'; w.services[sid].people['인도'] = `인도${sid}`; }
+    w.services['1'].people['사회'] = w.services['4'].people['사회'] = '같은 사회';
     const doc = weekToDoc(rules, w);
-    expect(doc.shared.people).toEqual({ 설교: '같은 목사' });
-    expect(doc.services['2'].people).toEqual({ 사회: '사회2' });
-    hoistShared(doc);
-    expect(doc.shared.people['사회']).toBeUndefined();
+    // 2부 사회 is not taken from the others (the guideline leaves it empty when there is none)
+    expect([doc.shared.people, doc.origin.people]).toEqual([{ 설교: '같은 목사', 사회: '같은 사회' }, { 설교: '1', 사회: '1' }]);
+    expect(doc.services['2'].people).toEqual({ 인도: '인도2' });
+    hoistShared(rules, doc);
+    expect(doc.shared.people['인도']).toBeUndefined();
   });
 
   it('text import of one service keeps the others and only changes what the text has', () => {

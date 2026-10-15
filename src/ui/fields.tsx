@@ -1,11 +1,10 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
-import { fieldMode, fieldValue } from '../core/doc';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { fieldShow } from '../core/doc';
 import type { FieldKind } from '../core/doc';
-import { differingServices, makeOwn, makeShared, writeField } from '../core/ops';
+import { takeShared, writeField } from '../core/ops';
 import { parseSongs } from '../core/parse';
 import type { CueDoc } from '../core/types';
-import { confirmBox } from './platform';
 import { rules } from './store';
 
 /** A change to the open document (the function mutates a copy). */
@@ -65,29 +64,6 @@ export function NumInput({ value, placeholder, onCommit, max = 240, changed, tit
   );
 }
 
-/** 공통 / 이 예배만 switch of one field (only when the document has more than one service). */
-function ModeChip({ doc, sid, kind, k, label, services, change }: { doc: CueDoc; sid: string; kind: FieldKind; k: string; label: string; services: string[]; change: Change }) {
-  if (services.length < 2) return null;
-  const mode = fieldMode(doc, sid, kind, k);
-  const others = services.filter((s) => s !== sid).map(svcLabel).join(', ');
-  const toggle = async () => {
-    if (mode === 'shared') return change((d) => makeOwn(d, sid, kind, k));
-    const diff = differingServices(doc, sid, kind, k);
-    if (diff.length && !(await confirmBox(`${label}을(를) 공통으로 바꾸면 ${diff.map(svcLabel).join(', ')}의 ${label}도 지금 ${svcLabel(sid)} 값으로 바뀝니다.`, '공통으로'))) return;
-    change((d) => makeShared(d, sid, kind, k));
-  };
-  return (
-    <button
-      type="button"
-      class={`mode ${mode}`}
-      title={mode === 'shared' ? `공통: ${others}에도 같은 값이 들어갑니다 — 누르면 이 예배만 따로 입력` : `이 예배만 따로 입력합니다 — 누르면 ${others}와(과) 공통`}
-      onClick={toggle}
-    >
-      {mode === 'shared' ? '공통' : '이 예배만'}
-    </button>
-  );
-}
-
 interface DocFieldProps {
   doc: CueDoc;
   sid: string;
@@ -96,50 +72,88 @@ interface DocFieldProps {
   label?: string;
   placeholder?: string;
   hint?: ComponentChildren;
-  services: string[];
   change: Change;
   /** 4부 찬양 1: a pasted worship-team message is split at its "-- 광고 --" line into 찬양 1 and 찬양 2 */
   splitSongs?: boolean;
 }
 
-/** One typed field of the document (a person, a value or a list), written where it lives (공통 or 이 예배만). */
-export function DocField({ doc, sid, kind, k, label = k, placeholder, hint, services, change, splitSongs }: DocFieldProps) {
-  const chip = <ModeChip doc={doc} sid={sid} kind={kind} k={k} label={label} services={services} change={change} />;
+/**
+ * One typed field of the document (a person, a value or a list). What is typed here is used by every other service
+ * that has nothing typed; there it shows as the placeholder. Typing over the placeholder starts this service's own
+ * value from scratch; 수정 starts it from the placeholder.
+ */
+export function DocField({ doc, sid, kind, k, label = k, placeholder, hint, change, splitSongs }: DocFieldProps) {
+  const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  const focusEnd = useRef(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!focusEnd.current || !el) return;
+    focusEnd.current = false;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  });
+  const { text, from } = fieldShow(rules, doc, sid, kind, k);
+  const tip = from && `${svcLabel(from.sid)}에 입력한 값입니다 — 그대로 두면 ${svcLabel(sid)}에도 들어가고, 입력하면 ${svcLabel(sid)}만 바뀝니다.`;
+  const take = from && (
+    <button
+      type="button"
+      class="take"
+      title={`${svcLabel(from.sid)}에 입력한 값을 ${svcLabel(sid)} 칸에 넣고 고칩니다`}
+      onClick={() => {
+        focusEnd.current = true;
+        change((d) => takeShared(rules, d, sid, kind, k));
+      }}
+    >
+      수정
+    </button>
+  );
   if (kind !== 'lists') {
-    const v = (fieldValue(doc, sid, kind, k) as string | undefined) ?? '';
     return (
-      <Field label={label} hint={hint} extra={chip}>
-        <input value={v} placeholder={placeholder} onInput={(e) => { const x = val(e); change((d) => writeField(d, sid, kind, k, x)); }} />
+      <Field label={label} hint={hint} extra={take}>
+        <input
+          ref={ref}
+          class={from ? 'inherit' : undefined}
+          value={(text as string | undefined) ?? ''}
+          placeholder={from ? (from.value as string) : placeholder}
+          title={tip}
+          onInput={(e) => { const x = val(e); change((d) => writeField(rules, d, sid, kind, k, x)); }}
+        />
       </Field>
     );
   }
-  const items = (fieldValue(doc, sid, 'lists', k) as string[] | undefined) ?? [];
+  const items = (text as string[] | undefined) ?? [];
+  const inherited = (from?.value as string[] | undefined) ?? [];
   const song = isSongKey(k);
+  // only what is typed here is tidied: the placeholder stays a placeholder
   const clean = () =>
     change((d) => {
-      const cur = (fieldValue(d, sid, 'lists', k) as string[] | undefined) ?? [];
+      const cur = fieldShow(rules, d, sid, 'lists', k).text as string[] | undefined;
+      if (!cur) return;
       if (!song) {
         const next = cur.map((s) => s.trim()).filter(Boolean);
-        if (next.join('\n') !== cur.join('\n')) writeField(d, sid, 'lists', k, next);
+        if (next.join('\n') !== cur.join('\n')) writeField(rules, d, sid, 'lists', k, next);
         return;
       }
       const r = parseSongs(cur.join('\n'));
       if (splitSongs && r.hasDivider) {
-        writeField(d, sid, 'lists', k, r.before);
-        writeField(d, sid, 'lists', '찬양2', r.after);
+        writeField(rules, d, sid, 'lists', k, r.before);
+        writeField(rules, d, sid, 'lists', '찬양2', r.after);
       } else {
         const next = [...r.before, ...r.after];
-        if (next.join('\n') !== cur.join('\n')) writeField(d, sid, 'lists', k, next);
+        if (next.join('\n') !== cur.join('\n')) writeField(rules, d, sid, 'lists', k, next);
       }
     });
   return (
-    <Field label={label} hint={hint} extra={chip} wide>
+    <Field label={label} hint={hint} extra={take} wide>
       <textarea
-        rows={Math.max(song ? 2 : 1, Math.min(10, items.length + (song ? 1 : 0)))}
+        ref={ref}
+        class={from ? 'inherit' : undefined}
+        rows={Math.max(song ? 2 : 1, Math.min(10, (from ? inherited.length : items.length) + (song ? 1 : 0)))}
         value={items.join('\n')}
-        placeholder={placeholder}
+        placeholder={from ? inherited.join('\n') : placeholder}
+        title={tip}
         spellcheck={false}
-        onInput={(e) => { const x = val(e).split('\n'); change((d) => writeField(d, sid, 'lists', k, x)); }}
+        onInput={(e) => { const x = val(e).split('\n'); change((d) => writeField(rules, d, sid, 'lists', k, x)); }}
         onBlur={clean}
       />
     </Field>

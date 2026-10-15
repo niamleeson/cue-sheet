@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import rulesJson from '../src/rules/rules.json';
 import { buildSheet, isKnownRowName } from '../src/core/engine';
-import { emptyDoc, fieldMode, fieldValue, isDate, normalizeDoc } from '../src/core/doc';
+import { emptyDoc, fieldShow, fieldValue, hasOwn, isDate, normalizeDoc, resolveFields } from '../src/core/doc';
 import { saveCell } from '../src/core/cellsave';
 import {
-  addCustom, addSpecial, copyDoc, copyPeople, COPY_DEFAULT, differingServices, makeOwn, makeShared, removeRow, renameCustom,
-  reorder, restoreRow, setDur, writeField,
+  addCustom, addSpecial, copyDoc, copyPeople, COPY_DEFAULT, removeRow, renameCustom, reorder, restoreRow, setDur, takeShared,
+  writeField,
 } from '../src/core/ops';
 import { importWeek } from '../src/core/migrate';
 import { parseCtx, parseText, SUNDAY_CTX, toText } from '../src/core/parse';
@@ -100,52 +100,89 @@ describe('order list', () => {
 });
 
 describe('fields', () => {
-  it('공통 fields change every service, 이 예배만 only one', () => {
+  it('typed in one form, a value is the placeholder of the others; typing over it or 수정 gives a service its own', () => {
     const doc = sunday();
-    writeField(doc, '1', 'people', '설교', '이목사');
-    expect(fieldMode(doc, '1', 'people', '설교')).toBe('shared');
-    for (const sid of ['1', '2', '4']) expect(fieldValue(doc, sid, 'people', '설교')).toBe('이목사');
+    const show = (sid: string) => fieldShow(rules, doc, sid, 'people', '설교');
+    const value = (sid: string) => fieldValue(rules, doc, sid, 'people', '설교');
+    writeField(rules, doc, '1', 'people', '설교', '이목사');
+    expect([doc.shared.people, doc.origin.people]).toEqual([{ 설교: '이목사' }, { 설교: '1' }]);
+    expect(show('1')).toEqual({ text: '이목사' });
+    expect(show('4')).toEqual({ from: { sid: '1', value: '이목사' } });
+    for (const sid of ['1', '2', '4']) expect(value(sid)).toBe('이목사');
 
-    makeOwn(doc, '4', 'people', '설교');
-    writeField(doc, '4', 'people', '설교', '김목사');
-    expect(fieldValue(doc, '1', 'people', '설교')).toBe('이목사');
-    expect(fieldValue(doc, '4', 'people', '설교')).toBe('김목사');
-    expect(differingServices(doc, '1', 'people', '설교')).toEqual(['4']);
+    // changed where it was typed: every service that takes it changes
+    writeField(rules, doc, '1', 'people', '설교', '이 목사');
+    for (const sid of ['1', '2', '4']) expect(value(sid)).toBe('이 목사');
 
-    // clearing keeps 이 예배만 (it does not fall back to the shared value)
-    writeField(doc, '4', 'people', '설교', '');
-    expect(fieldMode(doc, '4', 'people', '설교')).toBe('own');
-    expect(fieldValue(doc, '4', 'people', '설교')).toBe('');
+    // typed over the placeholder: this service's own, from scratch; emptied, the placeholder is back
+    writeField(rules, doc, '4', 'people', '설교', '김목사');
+    expect([value('1'), value('2'), value('4')]).toEqual(['이 목사', '이 목사', '김목사']);
+    writeField(rules, doc, '4', 'people', '설교', '');
+    expect(hasOwn(doc, '4', 'people', '설교')).toBe(false);
+    expect(show('4')).toEqual({ from: { sid: '1', value: '이 목사' } });
+    writeField(rules, doc, '4', 'people', '설교', ' ');
+    expect(value('4')).toBe('이 목사');
 
-    writeField(doc, '4', 'people', '설교', '김목사');
-    makeShared(doc, '4', 'people', '설교');
-    for (const sid of ['1', '2', '4']) expect(fieldValue(doc, sid, 'people', '설교')).toBe('김목사');
-    expect(differingServices(doc, '1', 'people', '설교')).toEqual([]);
+    // 수정: the placeholder becomes this service's text, to change from there
+    takeShared(rules, doc, '2', 'people', '설교');
+    expect(show('2')).toEqual({ text: '이 목사' });
+    writeField(rules, doc, '2', 'people', '설교', '이 목사님');
+    expect([value('1'), value('2'), value('4')]).toEqual(['이 목사', '이 목사님', '이 목사']);
+    takeShared(rules, doc, '1', 'people', '설교'); // where it was typed there is nothing to take
+    expect(hasOwn(doc, '1', 'people', '설교')).toBe(false);
 
-    // staff start per service; an empty value is simply gone
-    writeField(doc, '2', 'people', 'PD', '박PD');
-    expect(fieldMode(doc, '2', 'people', 'PD')).toBe('own');
-    expect(fieldValue(doc, '1', 'people', 'PD')).toBeUndefined();
-    writeField(doc, '2', 'people', 'PD', '');
-    expect('PD' in doc.services['2'].people).toBe(false);
-
-    writeField(doc, '1', 'lists', '본문', ['요 3:16']);
-    expect(fieldValue(doc, '4', 'lists', '본문')).toEqual(['요 3:16']);
+    // emptied where it was typed: the shared value is gone, values of their own stay
+    writeField(rules, doc, '1', 'people', '설교', '');
+    expect([doc.shared.people, doc.origin.people]).toEqual([{}, {}]);
+    expect([value('1'), value('2'), value('4')]).toEqual([undefined, '이 목사님', undefined]);
+    expect(show('4')).toEqual({});
+    // typed next in 4부: 4부's form shows it as text now, 1부 as the placeholder
+    writeField(rules, doc, '4', 'people', '설교', '최목사');
+    expect([show('1'), show('4')]).toEqual([{ from: { sid: '4', value: '최목사' } }, { text: '최목사' }]);
   });
 
-  it('copies staff from another service', () => {
+  it('2부 사회 (the guideline leaves it empty when there is none) never takes another service\'s value', () => {
     const doc = sunday();
+    writeField(rules, doc, '2', 'people', '사회', '최목사');
+    expect([doc.services['2'].people, doc.shared.people]).toEqual([{ 사회: '최목사' }, {}]);
+    writeField(rules, doc, '4', 'people', '사회', '박목사');
+    expect(fieldShow(rules, doc, '1', 'people', '사회')).toEqual({ from: { sid: '4', value: '박목사' } });
+    expect(fieldValue(rules, doc, '2', 'people', '사회')).toBe('최목사');
+    writeField(rules, doc, '2', 'people', '사회', '');
+    expect(fieldShow(rules, doc, '2', 'people', '사회')).toEqual({});
+    expect(fieldValue(rules, doc, '2', 'people', '사회')).toBeUndefined();
+    expect(resolveFields(rules, doc, '2').people).toEqual({});
+    takeShared(rules, doc, '2', 'people', '사회');
+    expect(doc.services['2'].people).toEqual({});
+  });
+
+  it('lists work the same; a list without a line is empty', () => {
+    const doc = sunday();
+    writeField(rules, doc, '1', 'lists', '본문', ['요 3:16']);
+    expect(fieldValue(rules, doc, '4', 'lists', '본문')).toEqual(['요 3:16']);
+    expect(fieldShow(rules, doc, '2', 'lists', '본문')).toEqual({ from: { sid: '1', value: ['요 3:16'] } });
+    writeField(rules, doc, '1', 'lists', '본문', ['', ' ']);
+    expect([doc.shared.lists, doc.origin.lists]).toEqual([{}, {}]);
+  });
+
+  it('copies staff from another service into the form', () => {
+    const doc = sunday();
+    writeField(rules, doc, '1', 'people', '음향', 'S');
     doc.services['2'].people = { PD: 'A', FD: 'B' };
     doc.services['4'].people = { PD: 'X', 음향: 'Y' };
-    copyPeople(doc, '2', '4', ['PD', 'FD', '음향']);
-    expect(doc.services['4'].people).toEqual({ PD: 'A', FD: 'B' });
+    copyPeople(rules, doc, '2', '4', ['PD', 'FD', '음향', '조명']);
+    expect(resolveFields(rules, doc, '4').people).toEqual({ PD: 'A', FD: 'B', 음향: 'S' });
+    // FD was empty in 4부: typed there, it is the shared value; 음향 is 2부's shared one, so 4부 takes it too
+    expect(doc.services['4'].people).toEqual({ PD: 'A' });
+    expect(fieldShow(rules, doc, '1', 'people', 'FD')).toEqual({ from: { sid: '4', value: 'B' } });
   });
 });
 
 describe('new document from an earlier one', () => {
   it('copies people, order and cell changes by default, not specials or songs', () => {
     const prev = sunday('2026-10-11');
-    prev.shared.people['설교'] = '이목사';
+    writeField(rules, prev, '2', 'people', '설교', '이목사');
+    writeField(rules, prev, '1', 'lists', '본문', ['요 1:1']);
     prev.services['1'].people['PD'] = 'A';
     prev.services['1'].vocals = 3;
     prev.services['1'].lists['찬양'] = ['곡'];
@@ -158,7 +195,7 @@ describe('new document from an earlier one', () => {
     ];
     const doc = copyDoc(rules, prev, '2026-10-18', COPY_DEFAULT, 'now');
     expect(doc).toMatchObject({ id: 'sunday-2026-10-18', date: '2026-10-18', updatedAt: 'now' });
-    expect(doc.shared.people).toEqual({ 설교: '이목사' });
+    expect([doc.shared, doc.origin]).toEqual([{ people: { 설교: '이목사' }, values: {}, lists: {} }, { people: { 설교: '2' }, values: {}, lists: {} }]);
     expect(doc.services['1']).toMatchObject({ people: { PD: 'A' }, vocals: 3, lists: {}, specials: {}, off: ['reading'] });
     expect(keys(doc, '1')).toContain(key);
     expect(doc.edits.map((e) => e.row)).toEqual(['sermon', key]);
@@ -167,6 +204,7 @@ describe('new document from an earlier one', () => {
     const noOrder = copyDoc(rules, prev, '2026-10-18', { ...COPY_DEFAULT, order: false, content: true, specials: true });
     expect(noOrder.edits.map((e) => e.row)).toEqual(['sermon']);
     expect(noOrder.services['1']).toMatchObject({ lists: { 찬양: ['곡'] }, specials: { 파송식: true }, off: [], moves: [] });
+    expect([noOrder.shared.lists, noOrder.origin.lists]).toEqual([{ 본문: ['요 1:1'] }, { 본문: '1' }]);
   });
 });
 
@@ -227,8 +265,8 @@ describe('text import', () => {
     // only 4부 written: its own value, the others keep the shared one
     const t3 = '[4부]\n설교: 박목사';
     const one = importWeek(rules, twice, parseText(t3, doc.date, isName, ctx).week);
-    expect(fieldValue(one, '1', 'people', '설교')).toBe('김목사');
-    expect(fieldValue(one, '4', 'people', '설교')).toBe('박목사');
+    expect(fieldValue(rules, one, '1', 'people', '설교')).toBe('김목사');
+    expect(fieldValue(rules, one, '4', 'people', '설교')).toBe('박목사');
     const back = importWeek(rules, one, parseText('[4부]\n설교: 김목사', doc.date, isName, ctx).week);
     expect('설교' in back.services['4'].people).toBe(false);
 
@@ -242,8 +280,10 @@ describe('text import', () => {
 describe('saved documents', () => {
   it('a saved document reads back exactly', () => {
     let doc = sunday('2026-10-04');
-    writeField(doc, '1', 'lists', '찬양', ['곡 A', '곡 B']);
-    writeField(doc, '4', 'people', '사회', '김 목사');
+    writeField(rules, doc, '1', 'lists', '찬양', ['곡 A', '곡 B']);
+    writeField(rules, doc, '4', 'people', '사회', '김 목사');
+    writeField(rules, doc, '2', 'people', '설교', '이 목사');
+    writeField(rules, doc, '4', 'people', '설교', '박 목사');
     setDur(doc, '2', 'announce', 7, 5);
     addSpecial(rules, doc, ['1', '2', '4'], '특별영상');
     const key = addCustom(rules, doc, ['1', '4'], '환영 인사', 3, 'praise');
@@ -253,9 +293,31 @@ describe('saved documents', () => {
     doc = saveCell(rules, doc, { sid: '1', row: key, col: 'role', text: '사회자', scope: ['4'] }).doc;
     doc = saveCell(rules, doc, { sid: '2', row: 'sermon', col: 'details', text: '-설교자 등단\n-추가 줄' }).doc;
     expect(doc.edits.length).toBeGreaterThan(0);
+    expect(doc.origin).toEqual({ people: { 사회: '4', 설교: '2' }, values: {}, lists: { 찬양: '1' } });
     const back = normalizeDoc(rules, JSON.parse(JSON.stringify(doc)));
     expect(back).toEqual(doc);
     for (const sid of ['1', '2', '4']) expect(buildSheet(rules, back!, sid)).toEqual(buildSheet(rules, doc, sid));
+  });
+
+  it('a document saved by 0.2.0 prints the same, and the same again after saving', () => {
+    const doc = normalizeDoc(rules, {
+      v: 2, kind: 'sunday', date: '2026-10-18',
+      shared: { people: { 사회: '김목사', 설교: '이목사', 인도: ' ' }, values: {}, lists: {} },
+      services: { '1': { people: { PD: '' } }, '2': {}, '4': { people: { 설교: '' } } },
+    })!;
+    expect([doc.shared.people, doc.origin.people]).toEqual([{ 사회: '김목사', 설교: '이목사' }, {}]);
+    expect([doc.services['1'].people, doc.services['2'].people, doc.services['4'].people]).toEqual([{}, { 사회: '김목사' }, { 설교: '' }]);
+    const cast = (sid: string) => buildSheet(rules, doc, sid).header.cast;
+    expect(cast('2')).toContain('■사회: 김목사');
+    expect(cast('4')).toContain('■설교:');
+    expect(fieldShow(rules, doc, '1', 'people', '설교')).toEqual({ text: '이목사' });
+    expect(fieldShow(rules, doc, '2', 'people', '설교')).toEqual({ from: { sid: '1', value: '이목사' } });
+    expect(fieldShow(rules, doc, '4', 'people', '설교')).toEqual({ text: '' });
+    expect(normalizeDoc(rules, JSON.parse(JSON.stringify(doc)))).toEqual(doc);
+    // a blank 2부 사회 stays blank
+    const blank = normalizeDoc(rules, { v: 2, kind: 'sunday', date: '2026-10-18', shared: { people: { 사회: '김목사' } }, services: { '2': { people: { 사회: '' } } } })!;
+    expect(blank.services['2'].people).toEqual({});
+    expect(fieldValue(rules, blank, '2', 'people', '사회')).toBeUndefined();
   });
 
   it('refuses what is not a cue sheet document and drops malformed parts', () => {
@@ -281,6 +343,7 @@ describe('saved documents', () => {
     expect(doc.id).toBe('wed-2026-10-21');
     expect(Object.keys(doc.services)).toEqual(['wed']);
     expect(doc.shared).toEqual({ people: { 인도: '이 전도사' }, values: {}, lists: { 찬양: ['곡'] } });
+    expect(doc.origin).toEqual({ people: {}, values: {}, lists: {} });
     expect(doc.services.wed).toEqual({
       people: {}, values: {}, lists: {}, leaders: 2, specials: {}, moves: [{ key: 'bible', after: 'praise' }], off: ['prayer2'], durs: { sermon: 40 },
     });

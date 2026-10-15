@@ -112,7 +112,7 @@ interface Prepared { rows: WorkRow[]; extraMics: string[]; enabled: Map<string, 
 function prepare(rules: RulesFile, doc: CueDoc, sid: string): Prepared {
   const svc = rules.services[sid];
   const sd = doc.services[sid] ?? emptyServiceDoc();
-  const { values } = resolveFields(doc, sid);
+  const { values } = resolveFields(rules, doc, sid);
   const warnings: Warning[] = [];
   const warn = (text: string, row?: string) => warnings.push({ level: 'warn', text, row });
   const info = (text: string, row?: string) => warnings.push({ level: 'info', text, row });
@@ -215,7 +215,7 @@ function rowFields(r: WorkRow) {
 export function buildSheet(rules: RulesFile, doc: CueDoc, sid: string, opts: BuildOpts = {}): Sheet {
   const svc: ServiceRules = rules.services[sid];
   const sd: ServiceDoc = doc.services[sid] ?? emptyServiceDoc();
-  const { values, lists, people } = resolveFields(doc, sid);
+  const { values, lists, people } = resolveFields(rules, doc, sid);
   const P = prepare(rules, doc, sid);
   const { enabled, autoOn, extraMics, warnings } = P;
   const warn = (text: string, row?: string) => warnings.push({ level: 'warn', text, row });

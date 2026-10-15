@@ -5,9 +5,10 @@
  * the 변경 사항 (고급) list, saved with the document.
  */
 import { COMPUTED, TOKEN, buildDoc, buildSheet, fmtMin, toMin } from './engine';
-import { clone, docServices, fieldMode, fieldValue, newId } from './doc';
+import { clone, docServices, fieldValue, newId } from './doc';
 import type { FieldKind } from './doc';
 import { applyOps, lineKey } from './lineops';
+import { writeField as typeField, writeFieldFor } from './ops';
 import { COLS } from './types';
 import type { CellEdit, Col, CueDoc, EditCol, LineOp, OutLine, RulesFile, Sheet } from './types';
 
@@ -317,28 +318,25 @@ function users(c: Ctx, kind: FieldKind, key: string): Set<string> {
 }
 
 /**
- * Writes a field where it lives: a 공통 (shared) field changes for every service that reads it, an 이 예배만 field for
- * this service and the other services picked for the change.
+ * Writes a field the cell shows. A header name is typed like in the service's form (the shared value where it was
+ * typed or where there is none yet, otherwise this service's own); any other field changes for the services picked
+ * for the change, and the others keep what they show. Notes the services that now show something else.
  */
 function writeField(c: Ctx, kind: FieldKind, key: string, value: string | string[]) {
-  const { doc } = c;
+  const { rules, doc } = c;
   const use = users(c, kind, key);
-  let shared = false;
-  const own: string[] = [];
-  for (const s of c.scope) {
-    if (s !== c.sid && !use.has(s)) continue;
-    if (fieldMode(doc, s, kind, key) === 'shared') {
-      (doc.shared[kind] as Record<string, unknown>)[key] = clone(value);
-      shared = true;
-    } else {
-      (doc.services[s][kind] as Record<string, unknown>)[key] = clone(value);
-      own.push(s);
-    }
-  }
-  const many = docServices(c.rules, doc).length > 1;
-  const where = [...(shared ? [many ? '공통' : svcLabel(c, c.sid)] : []), ...own.map((s) => svcLabel(c, s))];
-  const shown = Array.isArray(value) ? value.join(' / ') : value;
-  c.changes.push(`${key}: ${shown || '(빈 값)'} — ${where.join(', ')}`);
+  const sids = docServices(rules, doc);
+  const shown = (s: string) => {
+    const v = fieldValue(rules, doc, s, kind, key);
+    return Array.isArray(v) ? v.join(' / ') : v ?? '';
+  };
+  const before = new Map(sids.map((s) => [s, JSON.stringify(fieldValue(rules, doc, s, kind, key) ?? null)]));
+  if (c.row === 'header') typeField(rules, doc, c.sid, kind, key, value);
+  else writeFieldFor(rules, doc, kind, key, value, c.scope.filter((s) => s === c.sid || use.has(s)), use);
+  const changed = sids.filter((s) => (use.has(s) || c.scope.includes(s)) && before.get(s) !== JSON.stringify(fieldValue(rules, doc, s, kind, key) ?? null));
+  const groups = new Map<string, string[]>();
+  for (const s of changed) groups.set(shown(s), [...(groups.get(shown(s)) ?? []), svcLabel(c, s)]);
+  for (const [v, labels] of groups) c.changes.push(`${key}: ${v || '(빈 값)'} — ${labels.join(', ')}`);
 }
 
 function writeCount(c: Ctx, key: 'vocals' | 'leaders', n: number) {
@@ -406,7 +404,7 @@ function routeLines(c: Ctx, old: OutLine[], neu: string[]) {
   });
   for (const [name, L] of lists) {
     // an emptied list would bring back the guideline's example lines: leave it, the lines are taken out as edits
-    if (L.changed && L.items.length && !same(L.items, norm('lists', fieldValue(c.doc, c.sid, 'lists', name)))) writeField(c, 'lists', name, L.items);
+    if (L.changed && L.items.length && !same(L.items, norm('lists', fieldValue(c.rules, c.doc, c.sid, 'lists', name)))) writeField(c, 'lists', name, L.items);
   }
 
   // fill-in values of changed template lines
@@ -430,7 +428,7 @@ function routeLines(c: Ctx, old: OutLine[], neu: string[]) {
         const r = c.sheets.find((sh) => sh.serviceId === c.sid)?.rows.find((x) => x.key === c.row);
         if (r && Number(v) !== r.dur) writeDur(c, c.row, Number(v));
       } else if (!COMPUTED.has(t.name) && !/^t[+-]\d+$/.test(t.name)) {
-        const cur = norm('values', fieldValue(c.doc, c.sid, 'values', t.name)) as string;
+        const cur = norm('values', fieldValue(c.rules, c.doc, c.sid, 'values', t.name)) as string;
         if (v !== cur && !(cur === '' && v === (t.def ?? '').trim())) values.set(t.name, v);
       }
     });
@@ -458,7 +456,7 @@ function routePeople(c: Ctx, old: OutLine[], neu: string[]) {
     if (p && !typed.has(p.key)) typed.set(p.key, '');
   }
   for (const [key, name] of typed) {
-    if (name !== norm('people', fieldValue(c.doc, c.sid, 'people', key))) writeField(c, 'people', key, name);
+    if (name !== norm('people', fieldValue(c.rules, c.doc, c.sid, 'people', key))) writeField(c, 'people', key, name);
   }
 }
 

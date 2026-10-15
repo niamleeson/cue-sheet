@@ -1,15 +1,13 @@
 import { COLS } from './types';
 import type { CellEdit, CueDoc, EditCol, Fields, Kind, LineOp, Move, RulesFile, ServiceDoc } from './types';
 
-/** Fields that are usually the same for every service of the day; they start out shared (공통). */
-export const SHARED_DEFAULT = new Set([
-  '설교', '본문', '설교제목', '영상이름', '선교지', '파송팀', '파송인원', '과정', '수료자', '수료인원', '간증자',
-]);
 export type FieldKind = keyof Fields;
-export type FieldMode = 'shared' | 'own';
+export const FIELD_KINDS: FieldKind[] = ['people', 'values', 'lists'];
+type FieldVal = string | string[];
 
 export const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 export const emptyFields = (): Fields => ({ people: {}, values: {}, lists: {} });
+const emptyOrigin = (): CueDoc['origin'] => ({ people: {}, values: {}, lists: {} });
 export const emptyServiceDoc = (): ServiceDoc => ({ ...emptyFields(), specials: {}, moves: [], off: [], durs: {} });
 export const docId = (kind: Kind, date: string) => `${kind}-${date}`;
 
@@ -17,7 +15,7 @@ export const occasionOf = (rules: RulesFile, kind: Kind) => rules.occasions.find
 
 export function emptyDoc(rules: RulesFile, kind: Kind, date: string): CueDoc {
   return {
-    v: 2, id: docId(kind, date), kind, date, updatedAt: new Date().toISOString(), shared: emptyFields(),
+    v: 2, id: docId(kind, date), kind, date, updatedAt: new Date().toISOString(), shared: emptyFields(), origin: emptyOrigin(),
     services: Object.fromEntries(occasionOf(rules, kind).services.map((s) => [s, emptyServiceDoc()])), edits: [],
   };
 }
@@ -25,45 +23,76 @@ export function emptyDoc(rules: RulesFile, kind: Kind, date: string): CueDoc {
 /** The document's services in the occasion's order. */
 export const docServices = (rules: RulesFile, doc: CueDoc) => occasionOf(rules, doc.kind).services.filter((s) => doc.services[s]);
 
-/** 'own' when the service has its own value (even empty); otherwise shared when the document has one or the key is shared by default. */
-export function fieldMode(doc: CueDoc, sid: string, kind: FieldKind, key: string): FieldMode {
-  const own = doc.services[sid]?.[kind];
-  if (own && key in own) return 'own';
-  if (key in doc.shared[kind]) return 'shared';
-  return SHARED_DEFAULT.has(key) ? 'shared' : 'own';
+/** Nothing typed: an empty or blank text, a list without a line. */
+export const isBlank = (v: unknown) => (Array.isArray(v) ? !v.some((x) => String(x).trim()) : v == null || !String(v).trim());
+
+/** 출연 the guideline leaves empty when there is none (2부 사회): it never takes another service's value. */
+export function ownOnly(rules: RulesFile, sid: string, kind: FieldKind, key: string): boolean {
+  return kind === 'people' && !!rules.services[sid]?.cast.some(([k, , optional]) => k === key && optional);
 }
 
-export function resolveFields(doc: CueDoc, sid: string): Fields {
+const ownOf = (doc: CueDoc, sid: string, kind: FieldKind) => doc.services[sid]?.[kind] as Record<string, FieldVal> | undefined;
+export const hasOwn = (doc: CueDoc, sid: string, kind: FieldKind, key: string) => key in (ownOf(doc, sid, kind) ?? {});
+
+/** Services that take the shared value of a field: they have no value of their own. */
+export const followers = (rules: RulesFile, doc: CueDoc, kind: FieldKind, key: string) =>
+  docServices(rules, doc).filter((s) => !ownOnly(rules, s, kind, key) && !hasOwn(doc, s, kind, key));
+
+/**
+ * The service whose form shows the shared value as typed text (where it was typed; the first service that takes it when
+ * that one has its own value now). null when there is no shared value or no service takes it.
+ */
+export function originOf(rules: RulesFile, doc: CueDoc, kind: FieldKind, key: string): string | null {
+  if (isBlank(doc.shared[kind][key])) return null;
+  const f = followers(rules, doc, kind, key);
+  const o = doc.origin[kind][key];
+  return o && f.includes(o) ? o : f[0] ?? null;
+}
+
+export function resolveFields(rules: RulesFile, doc: CueDoc, sid: string): Fields {
   const sd = doc.services[sid] ?? emptyServiceDoc();
+  const people = { ...doc.shared.people };
+  for (const k of Object.keys(people)) if (ownOnly(rules, sid, 'people', k)) delete people[k];
   return {
-    people: { ...doc.shared.people, ...sd.people },
+    people: { ...people, ...sd.people },
     values: { ...doc.shared.values, ...sd.values },
     lists: { ...doc.shared.lists, ...sd.lists },
   };
 }
 
-export function fieldValue<K extends FieldKind>(doc: CueDoc, sid: string, kind: K, key: string): Fields[K][string] | undefined {
+/** What a service prints for a field: its own value, otherwise the shared one. */
+export function fieldValue<K extends FieldKind>(rules: RulesFile, doc: CueDoc, sid: string, kind: K, key: string): Fields[K][string] | undefined {
   type V = Record<string, Fields[K][string]>;
   const own = doc.services[sid]?.[kind] as V | undefined;
   if (own && key in own) return own[key];
+  if (ownOnly(rules, sid, kind, key)) return undefined;
   return (doc.shared[kind] as V)[key];
 }
 
-/** Writes a field where it currently lives (mutates `doc`). */
-export function setField<K extends FieldKind>(doc: CueDoc, sid: string, kind: K, key: string, value: Fields[K][string], mode = fieldMode(doc, sid, kind, key)) {
-  const target = (mode === 'own' ? doc.services[sid][kind] : doc.shared[kind]) as Record<string, Fields[K][string]>;
-  target[key] = value;
+/**
+ * A field as a service's form shows it: `text` typed in this form (its own value, or the shared value when it was typed
+ * here), or `from`: the shared value typed in another service's form, shown as the placeholder.
+ */
+export function fieldShow<K extends FieldKind>(rules: RulesFile, doc: CueDoc, sid: string, kind: K, key: string): { text?: Fields[K][string]; from?: { sid: string; value: Fields[K][string] } } {
+  type V = Record<string, Fields[K][string]>;
+  const own = doc.services[sid]?.[kind] as V | undefined;
+  if (own && key in own) return { text: own[key] };
+  if (ownOnly(rules, sid, kind, key)) return {};
+  const o = originOf(rules, doc, kind, key);
+  if (o == null) return {};
+  const value = (doc.shared[kind] as V)[key];
+  return o === sid ? { text: value } : { from: { sid: o, value } };
 }
 
-/** Switches a field between 공통 and 이 예배만 without losing what the service shows (mutates `doc`). */
-export function setFieldMode(doc: CueDoc, sid: string, kind: FieldKind, key: string, mode: FieldMode) {
-  const sd = doc.services[sid];
-  const cur = fieldValue(doc, sid, kind, key);
-  if (mode === 'own') {
-    (sd[kind] as Record<string, unknown>)[key] = clone(cur ?? (kind === 'lists' ? [] : ''));
+/** The shared value of a field and the form it was typed in; a blank value removes it (mutates `doc`). */
+export function setShared(doc: CueDoc, kind: FieldKind, key: string, value: FieldVal, origin: string) {
+  const shared = doc.shared[kind] as Record<string, FieldVal>;
+  if (isBlank(value)) {
+    delete shared[key];
+    delete doc.origin[kind][key];
   } else {
-    if (!(key in doc.shared[kind]) && cur !== undefined) (doc.shared[kind] as Record<string, unknown>)[key] = clone(cur);
-    delete (sd[kind] as Record<string, unknown>)[key];
+    shared[key] = clone(value);
+    doc.origin[kind][key] = origin;
   }
 }
 
@@ -124,17 +153,20 @@ export function computeMoves(base: string[], final: string[], titles: Record<str
   return moves;
 }
 
-/** Moves a field value that every service has identically into the shared fields (for SHARED_DEFAULT keys). */
-export function hoistShared(doc: CueDoc, sids = Object.keys(doc.services)) {
-  if (sids.length < 2) return;
-  for (const kind of ['people', 'values', 'lists'] as FieldKind[]) {
-    for (const key of SHARED_DEFAULT) {
-      const vals = sids.map((s) => (doc.services[s][kind] as Record<string, unknown>)[key]);
-      if (vals.some((v) => v === undefined)) continue;
-      const j = JSON.stringify(vals[0]);
-      if (!vals.every((v) => JSON.stringify(v) === j)) continue;
-      (doc.shared[kind] as Record<string, unknown>)[key] = vals[0];
-      for (const s of sids) delete (doc.services[s][kind] as Record<string, unknown>)[key];
+/**
+ * A field every service has the same value of (text import, older saved weeks) becomes the shared value, as if typed
+ * in the first service's form (mutates `doc`).
+ */
+export function hoistShared(rules: RulesFile, doc: CueDoc) {
+  const sids = docServices(rules, doc);
+  for (const kind of FIELD_KINDS) {
+    for (const key of new Set(sids.flatMap((s) => Object.keys(doc.services[s][kind])))) {
+      const take = sids.filter((s) => !ownOnly(rules, s, kind, key));
+      if (take.length < 2) continue;
+      const vals = take.map((s) => ownOf(doc, s, kind)![key]);
+      if (vals.some((v) => v === undefined || isBlank(v)) || !vals.every((v) => JSON.stringify(v) === JSON.stringify(vals[0]))) continue;
+      setShared(doc, kind, key, vals[0], take[0]);
+      for (const s of take) delete ownOf(doc, s, kind)![key];
     }
   }
 }
@@ -206,6 +238,26 @@ function readService(s: Record<string, unknown>): ServiceDoc {
 }
 
 /**
+ * Where shared values were typed, and empty values that mean nothing typed dropped. Documents of 0.2.0 have no
+ * `origin` and print the same as before: a shared 출연 the guideline leaves empty (2부 사회) becomes that service's own,
+ * and an empty value of a service that hid the shared one ('이 예배만') stays until something is typed there.
+ */
+function readOrigin(rules: RulesFile, doc: CueDoc, x: unknown) {
+  const legacy = !isObj(x);
+  for (const kind of FIELD_KINDS) {
+    const shared = doc.shared[kind] as Record<string, FieldVal>;
+    for (const [k, v] of Object.entries(shared)) if (isBlank(v)) delete shared[k];
+    const o = !legacy && isObj(x[kind]) ? x[kind] : {};
+    for (const [k, s] of Object.entries(o)) if (isStr(s) && doc.services[s] && k in shared) doc.origin[kind][k] = s;
+    for (const sid of Object.keys(doc.services)) {
+      const own = ownOf(doc, sid, kind)!;
+      if (legacy) for (const [k, v] of Object.entries(shared)) if (ownOnly(rules, sid, kind, k) && !(k in own)) own[k] = clone(v);
+      for (const [k, v] of Object.entries(own)) if (isBlank(v) && (ownOnly(rules, sid, kind, k) || !(k in shared))) delete own[k];
+    }
+  }
+}
+
+/**
  * A saved or opened document checked field by field; null when it is not a cue sheet document of a known occasion.
  * Anything malformed inside is dropped rather than failing the whole document.
  */
@@ -221,6 +273,7 @@ export function normalizeDoc(rules: RulesFile, x: unknown): CueDoc | null {
     if (isObj(s)) doc.services[sid] = readService(s);
   }
   const sids = Object.keys(doc.services);
+  readOrigin(rules, doc, x.origin);
   if (Array.isArray(x.edits))
     for (const e of x.edits) {
       if (!isObj(e) || !isStr(e.row) || !e.row || !isStr(e.col) || !EDIT_COLS.has(e.col)) continue;
