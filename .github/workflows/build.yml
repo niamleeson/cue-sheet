@@ -1,0 +1,123 @@
+name: Build
+
+# Pushing a tag such as v0.1.0 tests the app, builds the macOS and Windows installers and
+# publishes them as a GitHub Release. Running the workflow by hand (Actions → Build → Run workflow)
+# builds the same installers as workflow artifacts, without a release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS
+            os: macos-latest
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            build-args: --target universal-apple-darwin --bundles dmg
+          - name: Windows
+            os: windows-latest
+            rust-targets: x86_64-pc-windows-msvc
+            build-args: --bundles nsis
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Check that the tag matches the app version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match version $version in src-tauri/tauri.conf.json"
+            exit 1
+          fi
+
+      - run: npx tauri build ${{ matrix.build-args }}
+
+      # Release asset names must be ASCII: GitHub replaces Korean characters in them.
+      - name: Collect the macOS installer
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          mkdir -p out
+          cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg "out/CueSheetMaker-$version-macOS.dmg"
+
+      - name: Collect the Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          New-Item -ItemType Directory -Force out | Out-Null
+          $setup = @(Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe)
+          if ($setup.Count -ne 1) { throw "Expected one NSIS installer, found $($setup.Count)" }
+          Copy-Item $setup[0].FullName "out/CueSheetMaker-$version-Windows-x64-setup.exe"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.name }}
+          path: out/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          cat > notes.md <<EOF
+          ## 다운로드
+
+          - **macOS 11 이상** (Apple Silicon·Intel): CueSheetMaker-$version-macOS.dmg — 열고 '큐시트 메이커'를 응용 프로그램(Applications) 폴더로 끌어 놓습니다.
+          - **Windows 10·11** (64비트): CueSheetMaker-$version-Windows-x64-setup.exe — 실행해서 설치합니다.
+
+          ## 처음 열 때
+
+          - **macOS**: Apple 공증을 받지 않은 앱이라 처음에는 열리지 않습니다. 시스템 설정 → 개인정보 보호 및 보안에서 **그래도 열기**를 누르세요.
+          - **Windows**: "Windows의 PC 보호" 창이 나오면 **추가 정보** → **실행**을 누르세요.
+          - PDF를 만들려면 Microsoft Word(데스크톱)가 있어야 합니다.
+          EOF
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" out/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" out/* --repo "$GITHUB_REPOSITORY" --title "큐시트 메이커 $GITHUB_REF_NAME" --notes-file notes.md
+          fi
